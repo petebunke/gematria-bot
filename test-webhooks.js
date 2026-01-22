@@ -5,7 +5,7 @@
 
 const { getGematriaPhrase } = require('./scraper');
 const {
-    postToDiscord,
+    postToDiscordDaily,
     postToDiscordWeekly,
     postToDiscordMonthly,
     postToDiscordSeasonal,
@@ -21,26 +21,33 @@ async function testAllWebhooks() {
         console.log('Scraped data:', gematriaData);
         console.log('\n--- Posting to all webhooks ---\n');
 
-        // Post to all channels
-        const results = await Promise.all([
-            postToDiscord(gematriaData.phrase || 'Test', {
-                embed: {
-                    title: '🔢 Daily Gematria',
-                    description: gematriaData.phrase
-                }
-            }),
-            postToDiscordWeekly(gematriaData),
-            postToDiscordMonthly(gematriaData),
-            postToDiscordSeasonal(gematriaData),
-            postToDiscordYearly(gematriaData)
-        ]);
+        // Post to all channels sequentially to see each result
+        console.log('Posting to Daily...');
+        const daily = await postToDiscordDaily(gematriaData);
+        console.log('Daily result:', daily);
 
-        console.log('\n=== Results ===');
-        console.log('Daily:', results[0]);
-        console.log('Weekly:', results[1]);
-        console.log('Monthly:', results[2]);
-        console.log('Seasonal:', results[3]);
-        console.log('Yearly:', results[4]);
+        console.log('\nPosting to Weekly...');
+        const weekly = await postToDiscordWeekly(gematriaData);
+        console.log('Weekly result:', weekly);
+
+        console.log('\nPosting to Monthly...');
+        const monthly = await postToDiscordMonthly(gematriaData);
+        console.log('Monthly result:', monthly);
+
+        console.log('\nPosting to Seasonal...');
+        const seasonal = await postToDiscordSeasonal(gematriaData);
+        console.log('Seasonal result:', seasonal);
+
+        console.log('\nPosting to Yearly...');
+        const yearly = await postToDiscordYearly(gematriaData);
+        console.log('Yearly result:', yearly);
+
+        console.log('\n=== Summary ===');
+        console.log('Daily:', daily.success ? '✅' : '❌');
+        console.log('Weekly:', weekly.success ? '✅' : '❌');
+        console.log('Monthly:', monthly.success ? '✅' : '❌');
+        console.log('Seasonal:', seasonal.success ? '✅' : '❌');
+        console.log('Yearly:', yearly.success ? '✅' : '❌');
 
     } catch (error) {
         console.error('Error:', error.message);

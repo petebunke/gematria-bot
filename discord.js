@@ -20,7 +20,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // Webhook URLs for different posting schedules
 const WEBHOOKS = {
-    daily: process.env.DISCORD_WEBHOOK_URL,
+    daily: 'https://discord.com/api/webhooks/1463784586575347769/vu_n8qaeZvARa5Mv60W6E5GeLTlKm208pPnMw5fg_WTkU0iHDd4jyz-_lqEz1Q89awEn',
     weekly: 'https://discord.com/api/webhooks/1463804919856369706/nvMixEpLX2ypBMrX3QmNX-zwnK9Lw1XSU_XI6-DRtBOopE46LfxIOj3oyEr-e4hje381',
     monthly: 'https://discord.com/api/webhooks/1463805663397412924/5o-u-HxcAbtfY2Nq5vK3cYa9SDP_5ZO6aYZIyVZ-qMB8d95cIXCvI-B6RirKd6rs8YXk',
     seasonal: 'https://discord.com/api/webhooks/1463805962405019784/dqle7TQoLz7pciNDbY8H5rQKZ_0bRRtEMVQqbxV6fWL3RlLx-01oqD32R9LWtE5mfnYF',
@@ -125,6 +125,29 @@ async function postToDiscord(text, options = {}) {
     const webhookUrl = options.webhookUrl || WEBHOOKS.daily;
     console.log('→ Discord (Daily)...');
     const result = await postToDiscordWebhook(text, webhookUrl, options);
+    if (result.success) {
+        console.log('✅ Discord (Daily): Posted successfully!');
+    }
+    return result;
+}
+
+/**
+ * Post to Discord Daily channel (formatted like other channels)
+ */
+async function postToDiscordDaily(gematriaData, options = {}) {
+    const banner = '🔢 Daily Gematria';
+    const text = formatGematriaMessage(gematriaData, banner);
+
+    console.log('→ Discord (Daily)...');
+    const result = await postToDiscordWebhook(text, WEBHOOKS.daily, {
+        ...options,
+        embed: {
+            title: banner,
+            description: text,
+            color: 0x9B59B6, // Purple
+            footer: 'Daily Gematria'
+        }
+    });
     if (result.success) {
         console.log('✅ Discord (Daily): Posted successfully!');
     }
@@ -286,6 +309,7 @@ if (require.main === module) {
 
 module.exports = {
     postToDiscord,
+    postToDiscordDaily,
     postToDiscordWeekly,
     postToDiscordMonthly,
     postToDiscordSeasonal,
