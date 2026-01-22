@@ -7,12 +7,12 @@
 
 require('dotenv').config();
 
-const { getGematriaPhrase } = require('./src/scraper');
-const { postToBluesky } = require('./src/platforms/bluesky');
-const { postToMastodon } = require('./src/platforms/mastodon');
-const { postToDiscord } = require('./src/platforms/discord');
-const { postToTelegram } = require('./src/platforms/telegram');
-const { postToFacebook } = require('./src/platforms/facebook');
+const { getGematriaPhrase } = require('./scraper');
+const { postToBluesky } = require('./bluesky');
+const { postToMastodon } = require('./mastodon');
+const { postToDiscord, formatGematriaMessage } = require('./discord');
+const { postToTelegram } = require('./telegram');
+const { postToFacebook } = require('./facebook');
 
 // Configure which platforms to post to
 const ENABLED_PLATFORMS = {

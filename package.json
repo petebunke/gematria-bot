@@ -5,11 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test-scrape": "node src/scraper.js",
-    "post-bluesky": "node src/platforms/bluesky.js",
-    "post-mastodon": "node src/platforms/mastodon.js",
-    "post-discord": "node src/platforms/discord.js",
-    "post-telegram": "node src/platforms/telegram.js"
+    "scheduler": "node scheduler.js",
+    "test-scrape": "node scraper.js",
+    "post-bluesky": "node bluesky.js",
+    "post-mastodon": "node mastodon.js",
+    "post-discord": "node discord.js",
+    "post-telegram": "node telegram.js",
+    "post-weekly": "node -e \"require('./discord.js').postToDiscordWeekly({phrase:'Test',value:'111'})\"",
+    "post-monthly": "node -e \"require('./discord.js').postToDiscordMonthly({phrase:'Test',value:'111'})\"",
+    "post-seasonal": "node -e \"require('./discord.js').postToDiscordSeasonal({phrase:'Test',value:'111'})\"",
+    "post-yearly": "node -e \"require('./discord.js').postToDiscordYearly({phrase:'Test',value:'111'})\""
   },
   "keywords": [
     "gematria",
@@ -21,6 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "^16.0.0",
+    "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
     "playwright": "^1.57.0",
     "puppeteer": "^24.35.0"
