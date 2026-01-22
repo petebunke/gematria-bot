@@ -171,7 +171,6 @@ async function postToDiscordNonstop(gematriaData, options = {}) {
         ...options,
         username: 'Nonstop Aik Bekar⁹',
         embed: {
-            title: '🔢 Nonstop Gematria',
             description: text,
             color: 0xE91E63, // Pink
             footer: 'Nonstop Aik Bekar⁹'
@@ -194,7 +193,6 @@ async function postToDiscordDaily(gematriaData, options = {}) {
         ...options,
         username: 'Daily Aik Bekar⁹',
         embed: {
-            title: '🔢 Daily Gematria',
             description: text,
             color: 0x9B59B6, // Purple
             footer: 'Daily Aik Bekar⁹'
@@ -217,7 +215,6 @@ async function postToDiscordWeekly(gematriaData, options = {}) {
         ...options,
         username: 'Weekly Aik Bekar⁹',
         embed: {
-            title: '🔢 Weekly Gematria',
             description: text,
             color: 0x3498DB, // Blue
             footer: 'Weekly Aik Bekar⁹'
@@ -243,7 +240,6 @@ async function postToDiscordMonthly(gematriaData, options = {}) {
         ...options,
         username: 'Monthly Aik Bekar⁹',
         embed: {
-            title: `🔢 ${currentMonth} Gematria`,
             description: text,
             color: 0x2ECC71, // Green
             footer: 'Monthly Aik Bekar⁹'
@@ -300,7 +296,6 @@ async function postToDiscordSeasonal(gematriaData, options = {}) {
         ...options,
         username: 'Seasonal Aik Bekar⁹',
         embed: {
-            title: `${seasonEmojis[season]} ${season} Gematria`,
             description: text,
             color: seasonColors[season],
             footer: 'Seasonal Aik Bekar⁹'
@@ -324,7 +319,6 @@ async function postToDiscordYearly(gematriaData, options = {}) {
         ...options,
         username: 'Yearly Aik Bekar⁹',
         embed: {
-            title: `🎆 ${year} Gematria`,
             description: text,
             color: 0xE74C3C, // Red
             footer: 'Yearly Aik Bekar⁹'
