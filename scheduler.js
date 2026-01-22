@@ -2,7 +2,7 @@
  * scheduler.js - Scheduled posting for all Discord channels
  *
  * Schedules:
- * - Nonstop: Every 30 minutes
+ * - Nonstop: Continuous (posts immediately after each completion)
  * - Daily: Every day at 9:00 AM
  * - Weekly: Mondays at 9:00 AM
  * - Monthly: 1st of every month at 9:00 AM
@@ -77,19 +77,27 @@ console.log('══════════════════════�
 console.log('    Gematria Discord Scheduler');
 console.log('═══════════════════════════════════════════\n');
 console.log('Scheduled posts:');
-console.log('  Nonstop:   Every 30 minutes');
+console.log('  Nonstop:   Continuous (posts immediately after each completion)');
 console.log('  Daily:     Every day at 9:00 AM');
 console.log('  Weekly:    Every Monday at 9:00 AM');
 console.log('  Monthly:   1st of every month at 9:00 AM');
 console.log('  Seasonal:  Mar 20, Jun 21, Sep 22, Dec 21 at 9:00 AM');
 console.log('  Yearly:    January 1st at 9:00 AM');
-console.log('\nScheduler started. Waiting for scheduled times...\n');
+console.log('\nScheduler started...\n');
 
-// Nonstop: Every 30 minutes
-cron.schedule('*/30 * * * *', () => {
-    fetchAndPost(postToDiscordNonstop, 'Nonstop');
-}, {
-    timezone: 'America/New_York'
+// Nonstop: Continuous loop - posts one after another
+async function runNonstopLoop() {
+    console.log('Starting nonstop posting loop...');
+    while (true) {
+        await fetchAndPost(postToDiscordNonstop, 'Nonstop');
+        // Brief pause to avoid potential rate limiting (5 seconds)
+        await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+}
+
+// Start the nonstop loop
+runNonstopLoop().catch(err => {
+    console.error('Nonstop loop error:', err.message);
 });
 
 // Daily: Every day at 9:00 AM
