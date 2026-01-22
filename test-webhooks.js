@@ -163,7 +163,7 @@ async function generatePhraseAndGif() {
             definitions.push(`English: ${valueArray[0]}`);
             definitions.push(`Hebrew: ${valueArray[1]}`);
             definitions.push(`Simple: ${valueArray[2]}`);
-            definitions.push(`Reduced: ${valueArray[3]}`);
+            definitions.push(`Aik Bekar⁹: ${valueArray[3]}`);
         }
 
         return {
