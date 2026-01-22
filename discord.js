@@ -112,15 +112,14 @@ async function postToDiscordWebhook(text, webhookUrl, options = {}) {
 
         // If we have a file to upload, use multipart/form-data
         if (options.filePath && fs.existsSync(options.filePath)) {
-            const FormData = (await import('node-fetch')).FormData || globalThis.FormData;
-            const { Blob } = (await import('node-fetch')).Blob ? await import('node-fetch') : { Blob: globalThis.Blob };
+            const { FormData, File } = await import('undici');
 
             const form = new FormData();
             form.append('payload_json', JSON.stringify(payload));
 
             const fileBuffer = fs.readFileSync(options.filePath);
-            const blob = new Blob([fileBuffer], { type: 'image/gif' });
-            form.append('files[0]', blob, 'output.gif');
+            const file = new File([fileBuffer], 'output.gif', { type: 'image/gif' });
+            form.append('files[0]', file);
 
             const response = await fetch(webhookUrl, {
                 method: 'POST',
