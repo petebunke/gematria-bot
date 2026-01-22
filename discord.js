@@ -39,7 +39,7 @@ function formatGematriaMessage(gematriaData, banner) {
     let message = `${banner}\n\n`;  // Line-break after banner
 
     if (phrase) {
-        message += `"${phrase}"\n\n`;
+        message += `**"${phrase}"**\n\n`;
     }
 
     if (definitions && Array.isArray(definitions)) {
