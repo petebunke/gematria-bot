@@ -18,14 +18,14 @@
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
-// Webhook URLs for different posting schedules
+// Webhook URLs from environment variables
 const WEBHOOKS = {
-    nonstop: 'https://discord.com/api/webhooks/1463798819144859679/NZCdx3RbOrKSwb0BsYFHRCbSzhrqKi9_iPbtdlLBpz91a9wfGIaA_lZ41kBaPM6zVTLf',
-    daily: 'https://discord.com/api/webhooks/1463784586575347769/vu_n8qaeZvARa5Mv60W6E5GeLTlKm208pPnMw5fg_WTkU0iHDd4jyz-_lqEz1Q89awEn',
-    weekly: 'https://discord.com/api/webhooks/1463804919856369706/nvMixEpLX2ypBMrX3QmNX-zwnK9Lw1XSU_XI6-DRtBOopE46LfxIOj3oyEr-e4hje381',
-    monthly: 'https://discord.com/api/webhooks/1463805663397412924/5o-u-HxcAbtfY2Nq5vK3cYa9SDP_5ZO6aYZIyVZ-qMB8d95cIXCvI-B6RirKd6rs8YXk',
-    seasonal: 'https://discord.com/api/webhooks/1463805962405019784/dqle7TQoLz7pciNDbY8H5rQKZ_0bRRtEMVQqbxV6fWL3RlLx-01oqD32R9LWtE5mfnYF',
-    yearly: 'https://discord.com/api/webhooks/1463806108693954631/HvMDWANpY39Cs3phhCKSWXWdgGtXa3H_9w2WK-EyLQv1tIq4qRbwK4_T5lKxEsxzQbz9'
+    nonstop: process.env.WEBHOOK_NONSTOP,
+    daily: process.env.WEBHOOK_DAILY,
+    weekly: process.env.WEBHOOK_WEEKLY,
+    monthly: process.env.WEBHOOK_MONTHLY,
+    seasonal: process.env.WEBHOOK_SEASONAL,
+    yearly: process.env.WEBHOOK_YEARLY
 };
 
 /**
