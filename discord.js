@@ -85,6 +85,9 @@ async function postToDiscordWebhook(text, webhookUrl, options = {}) {
         // Optional: Create an embed for nicer formatting
         if (options.embed) {
             payload.embeds = [{
+                author: {
+                    name: options.username || 'Gematria Bot'
+                },
                 title: options.embed.title || 'Gematria of the Day',
                 description: options.embed.description || text,
                 color: options.embed.color || 0x9B59B6, // Purple
