@@ -43,10 +43,17 @@ function formatGematriaMessage(gematriaData, banner) {
     }
 
     if (definitions && Array.isArray(definitions)) {
-        definitions.forEach(def => {
-            message += `${def}\n`;
-        });
-        message += '\n';  // Extra line-break after last definition
+        // Format definitions in compact two-column layout
+        const pairs = [];
+        for (let i = 0; i < definitions.length; i += 2) {
+            if (i + 1 < definitions.length) {
+                pairs.push(`${definitions[i]}  |  ${definitions[i + 1]}`);
+            } else {
+                pairs.push(definitions[i]);
+            }
+        }
+        message += pairs.join('\n');
+        message += '\n\n';  // Line-break after last definition
     } else if (value) {
         message += `= ${value}\n\n`;  // Line-break after definition
     }
