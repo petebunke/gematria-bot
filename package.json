@@ -1,0 +1,28 @@
+{
+  "name": "gematria-phrase-poster",
+  "version": "1.0.0",
+  "description": "Generate gematria phrases and post to social media (Bluesky, Mastodon, Discord, Telegram, Facebook)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test-scrape": "node src/scraper.js",
+    "post-bluesky": "node src/platforms/bluesky.js",
+    "post-mastodon": "node src/platforms/mastodon.js",
+    "post-discord": "node src/platforms/discord.js",
+    "post-telegram": "node src/platforms/telegram.js"
+  },
+  "keywords": [
+    "gematria",
+    "social-media",
+    "bot",
+    "bluesky",
+    "mastodon"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "node-fetch": "^3.3.2",
+    "playwright": "^1.57.0",
+    "puppeteer": "^24.35.0"
+  }
+}

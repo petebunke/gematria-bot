@@ -1,0 +1,287 @@
+echo '
+const { chromium } = require("playwright");
+const { execSync } = require("child_process");
+const fs = require("fs");
+
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1463784586575347769/vu_n8qaeZvARa5Mv60W6E5GeLTlKm208pPnMw5fg_WTkU0iHDd4jyz-_lqEz1Q89awEn";
+
+async function postToDiscord(phrase, values, gifPath) {
+    const message = `${phrase} (${values})`;
+    
+    const formData = new FormData();
+    formData.append("content", message);
+    formData.append("file", new Blob([fs.readFileSync(gifPath)]), "gematria.gif");
+    
+    const res = await fetch(DISCORD_WEBHOOK, {
+        method: "POST",
+        body: formData
+    });
+    
+    if (res.ok) {
+        console.log("Posted to Discord!");
+    } else {
+        console.log("Discord error:", await res.text());
+    }
+}
+
+(async () => {
+    const browser = await chromium.launch({ headless: false });
+    const page = await browser.newPage();
+    
+    await page.goto("https://gematriagenerator.app");
+    await page.waitForSelector("button:has-text(\"Loading\")", { state: "hidden", timeout: 60000 });
+    console.log("Page loaded");
+    
+    await page.locator("input[type=\"checkbox\"]").check();
+    
+    let phrase = "";
+    let values = "";
+    let attempts = 0;
+    
+    while (!phrase && attempts < 20) {
+        attempts++;
+        console.log("Attempt", attempts);
+        
+        try {
+            const closeBtn = page.locator("button:has-text(\"Close\")").first();
+            if (await closeBtn.isVisible({ timeout: 500 })) {
+                await closeBtn.click();
+                await page.waitForTimeout(500);
+                continue;
+            }
+        } catch (e) {}
+        
+        try {
+            const clearBtn = page.locator("button:has-text(\"Clear\")");
+            if (await clearBtn.isVisible({ timeout: 500 })) {
+                await clearBtn.click();
+                await page.waitForTimeout(500);
+            }
+        } catch (e) {}
+        
+        await page.click("button:has-text(\"Generate Random Phrase\")");
+        
+        for (let i = 0; i < 60; i++) {
+            await page.waitForTimeout(1000);
+            const hasError = await page.locator("button:has-text(\"Close\")").isVisible().catch(() => false);
+            if (hasError) break;
+            const stillGenerating = await page.locator("button:has-text(\"Generating\")").isVisible().catch(() => false);
+            if (!stillGenerating) break;
+        }
+        
+        await page.waitForTimeout(2000);
+        
+        const allInputs = await page.locator("input").all();
+        for (let i = 0; i < allInputs.length; i++) {
+            const val = await allInputs[i].inputValue().catch(() => "");
+            const type = await allInputs[i].getAttribute("type");
+            if (type === "text" && val.length > 10) {
+                phrase = val;
+                break;
+            }
+        }
+        
+        if (phrase) {
+            try {
+                const redText = await page.evaluate(() => {
+                    const elements = document.querySelectorAll("*");
+                    for (const el of elements) {
+                        const text = el.textContent.trim();
+                        if (/^\d+\/\d+\/\d+\/\d+$/.test(text)) {
+                            return text;
+                        }
+                    }
+                    return null;
+                });
+                if (redText) values = redText;
+            } catch (e) {}
+        }
+    }
+    
+    if (phrase) {
+        console.log("Phrase:", phrase);
+        console.log("Values:", values);
+        
+        fs.writeFileSync("phrase.txt", phrase);
+        fs.writeFileSync("values.txt", values);
+        
+        if (fs.existsSync("./frames")) fs.rmSync("./frames", { recursive: true });
+        fs.mkdirSync("./frames");
+        
+        let targetSvg = null;
+        for (const svg of await page.locator("svg").all()) {
+            const box = await svg.boundingBox();
+            if (box && box.width > 200 && box.height > 100) {
+                targetSvg = svg;
+                await svg.scrollIntoViewIfNeeded();
+                break;
+            }
+        }
+        
+        if (targetSvg) {
+            console.log("Capturing frames...");
+            for (let i = 0; i < 30; i++) {
+                await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png` });
+                await page.waitForTimeout(100);
+            }
+            
+            console.log("Converting to GIF...");
+            execSync("ffmpeg -y -i ./frames/frame%03d.png -vf \"pad=iw+6:ih:3:0:black,split[s0][s1];[s0]palettegen=max_colors=256:reserve_transparent=0:stats_mode=single[p];[s1][p]paletteuse=dither=floyd_steinberg\" output.gif");
+            
+            console.log("Posting to Discord...");
+            await postToDiscord(phrase, values, "output.gif");
+        }
+    }
+    
+    await browser.close();
+})();
+' > make-gif.js
+
+node make-gif.js
+
+const { chromium } = require("playwright");
+const { execSync } = require("child_process");
+const fs = require("fs");
+
+(async () => {
+    const browser = await chromium.launch({ headless: false });
+    const page = await browser.newPage();
+    
+    await page.goto("https://gematriagenerator.app");
+    await page.waitForSelector("button:has-text(\"Loading\")", { state: "hidden", timeout: 60000 });
+    console.log("Page loaded");
+    
+    await page.locator("input[type=\"checkbox\"]").check();
+    
+    let phrase = "";
+    let values = "";
+    let attempts = 0;
+    
+    while (!phrase && attempts < 20) {
+        attempts++;
+        console.log("Attempt", attempts);
+        
+        // Close error modal if present
+        try {
+            const closeBtn = page.locator("button:has-text(\"Close\")").first();
+            if (await closeBtn.isVisible({ timeout: 500 })) {
+                console.log("Closing error modal...");
+                await closeBtn.click();
+                await page.waitForTimeout(500);
+                continue;
+            }
+        } catch (e) {}
+        
+        // Clear if needed
+        try {
+            const clearBtn = page.locator("button:has-text(\"Clear\")");
+            if (await clearBtn.isVisible({ timeout: 500 })) {
+                await clearBtn.click();
+                await page.waitForTimeout(500);
+            }
+        } catch (e) {}
+        
+        await page.click("button:has-text(\"Generate Random Phrase\")");
+        
+        // Wait for completion
+        for (let i = 0; i < 60; i++) {
+            await page.waitForTimeout(1000);
+            const hasError = await page.locator("button:has-text(\"Close\")").isVisible().catch(() => false);
+            if (hasError) {
+                console.log("Error detected");
+                break;
+            }
+            const stillGenerating = await page.locator("button:has-text(\"Generating\")").isVisible().catch(() => false);
+            if (!stillGenerating) {
+                console.log("Generation finished");
+                break;
+            }
+        }
+        
+        await page.waitForTimeout(2000);
+        
+        // Find the phrase input
+        const allInputs = await page.locator("input").all();
+        for (let i = 0; i < allInputs.length; i++) {
+            const val = await allInputs[i].inputValue().catch(() => "");
+            const type = await allInputs[i].getAttribute("type");
+            if (type === "text" && val.length > 10) {
+                phrase = val;
+                console.log("Found phrase:", phrase.substring(0, 50) + "...");
+                break;
+            }
+        }
+        
+        if (phrase) {
+            // Get the red text values
+            try {
+                const redText = await page.evaluate(() => {
+                    const elements = document.querySelectorAll("*");
+                    for (const el of elements) {
+                        const text = el.textContent.trim();
+                        if (/^\d+\/\d+\/\d+\/\d+$/.test(text)) {
+                            return text;
+                        }
+                    }
+                    return null;
+                });
+                if (redText) {
+                    values = redText;
+                    console.log("Found values:", values);
+                }
+            } catch (e) {
+                console.log("Could not get values:", e.message);
+            }
+        }
+    }
+    
+    console.log("\nExited loop. Phrase:", phrase ? "YES" : "NO");
+    
+    if (phrase) {
+        console.log("Phrase:", phrase);
+        console.log("Values:", values);
+        
+        fs.writeFileSync("phrase.txt", phrase);
+        fs.writeFileSync("values.txt", values);
+        console.log("Saved phrase.txt and values.txt");
+        
+        // Clean old frames
+        if (fs.existsSync("./frames")) {
+            fs.rmSync("./frames", { recursive: true });
+        }
+        fs.mkdirSync("./frames");
+        
+        // Find the big SVG
+        let targetSvg = null;
+        const svgs = await page.locator("svg").all();
+        
+        for (const svg of svgs) {
+            const box = await svg.boundingBox();
+            if (box && box.width > 200 && box.height > 100) {
+                targetSvg = svg;
+                await svg.scrollIntoViewIfNeeded();
+                console.log("Found SVG:", box.width, "x", box.height);
+                break;
+            }
+        }
+        
+        if (targetSvg) {
+            console.log("Capturing 30 frames...");
+            for (let i = 0; i < 30; i++) {
+                await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png` });
+                await page.waitForTimeout(100);
+            }
+            
+            console.log("Converting to GIF with black borders...");
+            execSync("ffmpeg -y -i ./frames/frame%03d.png -vf \"pad=iw+6:ih:3:0:black,split[s0][s1];[s0]palettegen=max_colors=256:reserve_transparent=0:stats_mode=single[p];[s1][p]paletteuse=dither=floyd_steinberg\" output.gif");
+            console.log("Saved output.gif");
+        }
+        
+        console.log("\n--- FINAL RESULT ---");
+        console.log("Phrase:", phrase);
+        console.log("Values:", values);
+    }
+    
+    await browser.close();
+})();
+
