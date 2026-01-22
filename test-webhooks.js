@@ -9,6 +9,7 @@ const fs = require("fs");
 const path = require("path");
 
 const {
+    postToDiscordNonstop,
     postToDiscordDaily,
     postToDiscordWeekly,
     postToDiscordMonthly,
@@ -178,33 +179,38 @@ async function generatePhraseAndGif() {
 }
 
 async function postToAllChannels(gematriaData) {
-    console.log('\n--- Posting to all Discord channels ---\n');
+    console.log('\n--- Posting to all 6 Discord channels ---\n');
 
     const options = {
         filePath: gematriaData.gifPath
     };
 
-    console.log('1. Posting to Daily...');
+    console.log('1. Posting to Nonstop...');
+    const nonstop = await postToDiscordNonstop(gematriaData, options);
+    console.log('   Result:', nonstop.success ? '✅' : '❌', nonstop.error || '');
+
+    console.log('\n2. Posting to Daily...');
     const daily = await postToDiscordDaily(gematriaData, options);
     console.log('   Result:', daily.success ? '✅' : '❌', daily.error || '');
 
-    console.log('\n2. Posting to Weekly...');
+    console.log('\n3. Posting to Weekly...');
     const weekly = await postToDiscordWeekly(gematriaData, options);
     console.log('   Result:', weekly.success ? '✅' : '❌', weekly.error || '');
 
-    console.log('\n3. Posting to Monthly...');
+    console.log('\n4. Posting to Monthly...');
     const monthly = await postToDiscordMonthly(gematriaData, options);
     console.log('   Result:', monthly.success ? '✅' : '❌', monthly.error || '');
 
-    console.log('\n4. Posting to Seasonal...');
+    console.log('\n5. Posting to Seasonal...');
     const seasonal = await postToDiscordSeasonal(gematriaData, options);
     console.log('   Result:', seasonal.success ? '✅' : '❌', seasonal.error || '');
 
-    console.log('\n5. Posting to Yearly...');
+    console.log('\n6. Posting to Yearly...');
     const yearly = await postToDiscordYearly(gematriaData, options);
     console.log('   Result:', yearly.success ? '✅' : '❌', yearly.error || '');
 
     console.log('\n=== Summary ===');
+    console.log('Nonstop:', nonstop.success ? '✅' : '❌');
     console.log('Daily:', daily.success ? '✅' : '❌');
     console.log('Weekly:', weekly.success ? '✅' : '❌');
     console.log('Monthly:', monthly.success ? '✅' : '❌');

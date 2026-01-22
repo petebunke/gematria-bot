@@ -20,6 +20,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 // Webhook URLs for different posting schedules
 const WEBHOOKS = {
+    nonstop: 'https://discord.com/api/webhooks/1463798819144859679/NZCdx3RbOrKSwb0BsYFHRCbSzhrqKi9_iPbtdlLBpz91a9wfGIaA_lZ41kBaPM6zVTLf',
     daily: 'https://discord.com/api/webhooks/1463784586575347769/vu_n8qaeZvARa5Mv60W6E5GeLTlKm208pPnMw5fg_WTkU0iHDd4jyz-_lqEz1Q89awEn',
     weekly: 'https://discord.com/api/webhooks/1463804919856369706/nvMixEpLX2ypBMrX3QmNX-zwnK9Lw1XSU_XI6-DRtBOopE46LfxIOj3oyEr-e4hje381',
     monthly: 'https://discord.com/api/webhooks/1463805663397412924/5o-u-HxcAbtfY2Nq5vK3cYa9SDP_5ZO6aYZIyVZ-qMB8d95cIXCvI-B6RirKd6rs8YXk',
@@ -161,6 +162,29 @@ async function postToDiscord(text, options = {}) {
     const result = await postToDiscordWebhook(text, webhookUrl, options);
     if (result.success) {
         console.log('✅ Discord (Daily): Posted successfully!');
+    }
+    return result;
+}
+
+/**
+ * Post to Discord Nonstop channel
+ */
+async function postToDiscordNonstop(gematriaData, options = {}) {
+    const banner = '🔢 Gematria';
+    const text = formatGematriaMessage(gematriaData, banner);
+
+    console.log('→ Discord (Nonstop)...');
+    const result = await postToDiscordWebhook(text, WEBHOOKS.nonstop, {
+        ...options,
+        embed: {
+            title: banner,
+            description: text,
+            color: 0xE91E63, // Pink
+            footer: 'Nonstop Gematria'
+        }
+    });
+    if (result.success) {
+        console.log('✅ Discord (Nonstop): Posted successfully!');
     }
     return result;
 }
@@ -343,6 +367,7 @@ if (require.main === module) {
 
 module.exports = {
     postToDiscord,
+    postToDiscordNonstop,
     postToDiscordDaily,
     postToDiscordWeekly,
     postToDiscordMonthly,
