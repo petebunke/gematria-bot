@@ -1,40 +1,50 @@
 /**
- * test-webhooks.js - Test all Discord webhooks
+ * test-webhooks.js - Test all Discord webhooks with real scraped data
  * Run with: node test-webhooks.js
  */
 
+const { getGematriaPhrase } = require('./scraper');
 const {
+    postToDiscord,
     postToDiscordWeekly,
     postToDiscordMonthly,
     postToDiscordSeasonal,
     postToDiscordYearly
-} = require('./discord.js');
-
-const testData = {
-    phrase: 'Test phrase',
-    definitions: [
-        'English: 1111',
-        'Hebrew: 666',
-        'Simple: 111',
-        'Reduced: 99'
-    ]
-};
+} = require('./discord');
 
 async function testAllWebhooks() {
-    console.log('Testing all Discord webhooks...\n');
+    console.log('🔢 Fetching gematria phrase...\n');
 
-    const results = await Promise.all([
-        postToDiscordWeekly(testData),
-        postToDiscordMonthly(testData),
-        postToDiscordSeasonal(testData),
-        postToDiscordYearly(testData)
-    ]);
+    try {
+        const gematriaData = await getGematriaPhrase();
 
-    console.log('\n=== Results ===');
-    console.log('Weekly:', results[0]);
-    console.log('Monthly:', results[1]);
-    console.log('Seasonal:', results[2]);
-    console.log('Yearly:', results[3]);
+        console.log('Scraped data:', gematriaData);
+        console.log('\n--- Posting to all webhooks ---\n');
+
+        // Post to all channels
+        const results = await Promise.all([
+            postToDiscord(gematriaData.phrase || 'Test', {
+                embed: {
+                    title: '🔢 Daily Gematria',
+                    description: gematriaData.phrase
+                }
+            }),
+            postToDiscordWeekly(gematriaData),
+            postToDiscordMonthly(gematriaData),
+            postToDiscordSeasonal(gematriaData),
+            postToDiscordYearly(gematriaData)
+        ]);
+
+        console.log('\n=== Results ===');
+        console.log('Daily:', results[0]);
+        console.log('Weekly:', results[1]);
+        console.log('Monthly:', results[2]);
+        console.log('Seasonal:', results[3]);
+        console.log('Yearly:', results[4]);
+
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
 }
 
 testAllWebhooks();
