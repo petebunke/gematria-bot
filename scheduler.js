@@ -2,6 +2,8 @@
  * scheduler.js - Scheduled posting for all Discord channels
  *
  * Schedules:
+ * - Nonstop: Every 30 minutes
+ * - Daily: Every day at 9:00 AM
  * - Weekly: Mondays at 9:00 AM
  * - Monthly: 1st of every month at 9:00 AM
  * - Seasonal: Start of each season (Mar 20, Jun 21, Sep 22, Dec 21) at 9:00 AM
@@ -18,6 +20,8 @@ require('dotenv').config();
 const cron = require('node-cron');
 const { getGematriaPhrase } = require('./scraper');
 const {
+    postToDiscordNonstop,
+    postToDiscordDaily,
     postToDiscordWeekly,
     postToDiscordMonthly,
     postToDiscordSeasonal,
@@ -70,21 +74,37 @@ function isSeasonStart() {
 }
 
 console.log('═══════════════════════════════════════════');
-console.log('    🔢 Gematria Discord Scheduler');
+console.log('    Gematria Discord Scheduler');
 console.log('═══════════════════════════════════════════\n');
 console.log('Scheduled posts:');
-console.log('  📅 Weekly:   Every Monday at 9:00 AM');
-console.log('  📆 Monthly:  1st of every month at 9:00 AM');
-console.log('  🌸 Seasonal: Mar 20, Jun 21, Sep 22, Dec 21 at 9:00 AM');
-console.log('  🎆 Yearly:   January 1st at 9:00 AM');
+console.log('  Nonstop:   Every 30 minutes');
+console.log('  Daily:     Every day at 9:00 AM');
+console.log('  Weekly:    Every Monday at 9:00 AM');
+console.log('  Monthly:   1st of every month at 9:00 AM');
+console.log('  Seasonal:  Mar 20, Jun 21, Sep 22, Dec 21 at 9:00 AM');
+console.log('  Yearly:    January 1st at 9:00 AM');
 console.log('\nScheduler started. Waiting for scheduled times...\n');
+
+// Nonstop: Every 30 minutes
+cron.schedule('*/30 * * * *', () => {
+    fetchAndPost(postToDiscordNonstop, 'Nonstop');
+}, {
+    timezone: 'America/New_York'
+});
+
+// Daily: Every day at 9:00 AM
+cron.schedule('0 9 * * *', () => {
+    fetchAndPost(postToDiscordDaily, 'Daily');
+}, {
+    timezone: 'America/New_York'
+});
 
 // Weekly: Every Monday at 9:00 AM
 // Cron format: minute hour day-of-month month day-of-week
 cron.schedule('0 9 * * 1', () => {
     fetchAndPost(postToDiscordWeekly, 'Weekly');
 }, {
-    timezone: 'America/New_York' // Adjust timezone as needed
+    timezone: 'America/New_York'
 });
 
 // Monthly: 1st of every month at 9:00 AM
