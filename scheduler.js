@@ -38,19 +38,25 @@ async function fetchAndPost(postFunction, label) {
         const gematriaData = await getGematriaPhrase();
 
         if (!gematriaData.phrase) {
-            console.log(`⚠️  No phrase data available for ${label} post`);
+            console.log(`No phrase data available for ${label} post`);
             return;
         }
 
-        const result = await postFunction(gematriaData);
+        // Pass gifPath as option for file attachment
+        const options = {};
+        if (gematriaData.gifPath) {
+            options.filePath = gematriaData.gifPath;
+        }
+
+        const result = await postFunction(gematriaData, options);
 
         if (result.success) {
-            console.log(`✅ ${label} post completed successfully`);
+            console.log(`${label} post completed successfully`);
         } else {
-            console.log(`❌ ${label} post failed: ${result.error}`);
+            console.log(`${label} post failed: ${result.error}`);
         }
     } catch (error) {
-        console.error(`❌ Error during ${label} post:`, error.message);
+        console.error(`Error during ${label} post:`, error.message);
     }
 }
 
