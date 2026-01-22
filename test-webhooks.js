@@ -1,9 +1,8 @@
 /**
- * test-webhooks.js - Test all Discord webhooks with real scraped data
+ * test-webhooks.js - Test all Discord webhooks
  * Run with: node test-webhooks.js
  */
 
-const { getGematriaPhrase } = require('./scraper');
 const {
     postToDiscordDaily,
     postToDiscordWeekly,
@@ -12,46 +11,49 @@ const {
     postToDiscordYearly
 } = require('./discord');
 
+// Test data (use this instead of scraper for testing webhooks)
+const testData = {
+    phrase: 'test phrase (1111/666/111/55)',
+    definitions: [
+        'English: 1111',
+        'Hebrew: 666',
+        'Simple: 111',
+        'Reduced: 55'
+    ]
+};
+
 async function testAllWebhooks() {
-    console.log('🔢 Fetching gematria phrase...\n');
+    console.log('🔢 Testing all Discord webhooks...\n');
+    console.log('Test data:', testData);
+    console.log('\n--- Posting to all webhooks ---\n');
 
-    try {
-        const gematriaData = await getGematriaPhrase();
+    // Post to all channels sequentially
+    console.log('1. Posting to Daily...');
+    const daily = await postToDiscordDaily(testData);
+    console.log('   Result:', daily);
 
-        console.log('Scraped data:', gematriaData);
-        console.log('\n--- Posting to all webhooks ---\n');
+    console.log('\n2. Posting to Weekly...');
+    const weekly = await postToDiscordWeekly(testData);
+    console.log('   Result:', weekly);
 
-        // Post to all channels sequentially to see each result
-        console.log('Posting to Daily...');
-        const daily = await postToDiscordDaily(gematriaData);
-        console.log('Daily result:', daily);
+    console.log('\n3. Posting to Monthly...');
+    const monthly = await postToDiscordMonthly(testData);
+    console.log('   Result:', monthly);
 
-        console.log('\nPosting to Weekly...');
-        const weekly = await postToDiscordWeekly(gematriaData);
-        console.log('Weekly result:', weekly);
+    console.log('\n4. Posting to Seasonal...');
+    const seasonal = await postToDiscordSeasonal(testData);
+    console.log('   Result:', seasonal);
 
-        console.log('\nPosting to Monthly...');
-        const monthly = await postToDiscordMonthly(gematriaData);
-        console.log('Monthly result:', monthly);
+    console.log('\n5. Posting to Yearly...');
+    const yearly = await postToDiscordYearly(testData);
+    console.log('   Result:', yearly);
 
-        console.log('\nPosting to Seasonal...');
-        const seasonal = await postToDiscordSeasonal(gematriaData);
-        console.log('Seasonal result:', seasonal);
-
-        console.log('\nPosting to Yearly...');
-        const yearly = await postToDiscordYearly(gematriaData);
-        console.log('Yearly result:', yearly);
-
-        console.log('\n=== Summary ===');
-        console.log('Daily:', daily.success ? '✅' : '❌');
-        console.log('Weekly:', weekly.success ? '✅' : '❌');
-        console.log('Monthly:', monthly.success ? '✅' : '❌');
-        console.log('Seasonal:', seasonal.success ? '✅' : '❌');
-        console.log('Yearly:', yearly.success ? '✅' : '❌');
-
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
+    console.log('\n=== Summary ===');
+    console.log('Daily:', daily.success ? '✅' : '❌', daily.error || '');
+    console.log('Weekly:', weekly.success ? '✅' : '❌', weekly.error || '');
+    console.log('Monthly:', monthly.success ? '✅' : '❌', monthly.error || '');
+    console.log('Seasonal:', seasonal.success ? '✅' : '❌', seasonal.error || '');
+    console.log('Yearly:', yearly.success ? '✅' : '❌', yearly.error || '');
 }
 
 testAllWebhooks();
