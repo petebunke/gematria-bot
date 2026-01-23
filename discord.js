@@ -10,7 +10,8 @@
  * That's literally it. No app registration, no OAuth, nothing.
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Webhook mapping for different posting frequencies
 const WEBHOOKS = {
