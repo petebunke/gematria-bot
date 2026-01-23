@@ -1,23 +1,41 @@
 /**
  * discord.js - Post to Discord via Webhook (FREE, easiest setup)
- * 
+ *
  * SETUP:
  * 1. Open Discord, go to your server
  * 2. Right-click a channel → Edit Channel → Integrations → Webhooks
  * 3. Click "New Webhook"
  * 4. Copy the Webhook URL to your .env file
- * 
+ *
  * That's literally it. No app registration, no OAuth, nothing.
  */
 
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+require('dotenv').config();
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+// Webhook mapping for different posting frequencies
+const WEBHOOKS = {
+    reply: process.env.DISCORD_WEBHOOK_REPLY,
+    daily: process.env.DISCORD_WEBHOOK_DAILY,
+    weekly: process.env.DISCORD_WEBHOOK_WEEKLY,
+    monthly: process.env.DISCORD_WEBHOOK_MONTHLY,
+    seasonal: process.env.DISCORD_WEBHOOK_SEASONAL,
+    yearly: process.env.DISCORD_WEBHOOK_YEARLY,
+    decadic: process.env.DISCORD_WEBHOOK_DECADIC,
+};
 
+/**
+ * Post to Discord via webhook
+ * @param {string} text - Message content
+ * @param {object} options - Options including channel type and embed settings
+ * @param {string} options.channel - Which webhook to use: 'reply', 'daily', 'weekly', 'monthly', 'seasonal', 'yearly', 'decadic'
+ */
 async function postToDiscord(text, options = {}) {
-    if (!DISCORD_WEBHOOK_URL) {
-        console.log('⚠️  Discord webhook not configured. Skipping.');
-        return { success: false, error: 'Missing webhook URL' };
+    const channel = options.channel || 'daily';
+    const webhookUrl = WEBHOOKS[channel];
+
+    if (!webhookUrl) {
+        console.log(`⚠️  Discord webhook for '${channel}' not configured. Skipping.`);
+        return { success: false, error: `Missing webhook URL for channel: ${channel}` };
     }
 
     try {
@@ -41,7 +59,7 @@ async function postToDiscord(text, options = {}) {
             payload.content = undefined; // Use embed instead
         }
 
-        const response = await fetch(DISCORD_WEBHOOK_URL, {
+        const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -61,12 +79,26 @@ async function postToDiscord(text, options = {}) {
     }
 }
 
+/**
+ * Get list of available webhook channels
+ */
+function getAvailableChannels() {
+    return Object.entries(WEBHOOKS)
+        .filter(([, url]) => url)
+        .map(([name]) => name);
+}
+
 // Test if run directly
 if (require.main === module) {
+    const channel = process.argv[2] || 'daily';
     const testMessage = `🔢 Test post from Gematria Poster - ${new Date().toLocaleString()}`;
-    
+
+    console.log(`Available channels: ${getAvailableChannels().join(', ')}`);
+    console.log(`Testing channel: ${channel}`);
+
     // Test with embed
     postToDiscord(testMessage, {
+        channel,
         embed: {
             title: '🔢 Daily Gematria',
             description: testMessage,
@@ -75,4 +107,4 @@ if (require.main === module) {
     }).then(console.log);
 }
 
-module.exports = { postToDiscord };
+module.exports = { postToDiscord, WEBHOOKS, getAvailableChannels };
