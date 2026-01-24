@@ -1,0 +1,17 @@
+app = "gematria-discord"
+primary_region = "ord"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+# This is a worker process, not a web service
+[processes]
+  app = "node reply-bot.js"
+
+# No HTTP service - this is a Discord bot
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 1
