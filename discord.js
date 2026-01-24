@@ -1,9 +1,7 @@
 /**
  * discord.js - Post to Discord via Webhooks for multiple channels
  *
- * Posts in this format:
- * - phrase words (gematria values)
- * - For each word: Word, part of speech, definition, pattern image
+ * Posts gematria phrase with animated GIF pattern
  *
  * Bot names:
  * - reply aik bekar⁹ bot
@@ -18,6 +16,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const FormData = require('form-data');
 
 // Channel configurations
 const CHANNELS = {
@@ -51,13 +50,10 @@ const CHANNELS = {
     }
 };
 
-// Pattern image URL (hosted on GitHub)
-const PATTERN_IMAGE_URL = 'https://raw.githubusercontent.com/petebunke/gematria-bot/main/pattern.png';
-
 /**
- * Post gematria result to Discord in the exact screenshot format
+ * Post gematria result to Discord with GIF attachment
  * @param {string} channel - Channel name
- * @param {object} data - Gematria data { phrase, values, words: [{ word, partOfSpeech, definition }] }
+ * @param {object} data - Gematria data { phrase, values, words, gifPath }
  */
 async function postGematria(channel, data) {
     const config = CHANNELS[channel];
@@ -73,36 +69,64 @@ async function postGematria(channel, data) {
     }
 
     try {
-        // Format: "yoga highland (555/666/111/99)"
-        const mainMessage = `${data.phrase} (${data.values})`;
-
         // Build embeds for each word
         const embeds = [];
         for (const wordData of data.words || []) {
             embeds.push({
-                title: `**${wordData.word}**`,
-                description: `*${wordData.partOfSpeech}*\n${wordData.definition}`,
-                image: {
-                    url: PATTERN_IMAGE_URL
-                }
+                title: wordData.word,
+                description: `*${wordData.partOfSpeech}*\n${wordData.definition}`
             });
         }
 
-        const payload = {
-            content: mainMessage,
-            username: config.botName,
-            embeds: embeds.length > 0 ? embeds : undefined
-        };
+        // If we have a GIF, upload it with multipart form data
+        if (data.gifPath && fs.existsSync(data.gifPath)) {
+            // Add embed for the GIF image
+            embeds.push({
+                image: { url: 'attachment://pattern.gif' }
+            });
 
-        const response = await fetch(config.webhook, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+            const payload = {
+                content: `${data.phrase} (${data.values})`,
+                username: config.botName,
+                embeds: embeds.slice(0, 10)
+            };
 
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(`Webhook failed: ${err}`);
+            // Use FormData to upload the GIF
+            const form = new FormData();
+            form.append('payload_json', JSON.stringify(payload));
+            form.append('files[0]', fs.createReadStream(data.gifPath), {
+                filename: 'pattern.gif',
+                contentType: 'image/gif'
+            });
+
+            const response = await fetch(config.webhook, {
+                method: 'POST',
+                body: form,
+                headers: form.getHeaders()
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`Webhook failed: ${err}`);
+            }
+        } else {
+            // No GIF, just send JSON
+            const payload = {
+                content: `${data.phrase} (${data.values})`,
+                username: config.botName,
+                embeds: embeds.slice(0, 10)
+            };
+
+            const response = await fetch(config.webhook, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`Webhook failed: ${err}`);
+            }
         }
 
         console.log(`✅ Discord [${channel}]: Posted successfully as "${config.botName}"!`);
@@ -187,17 +211,18 @@ if (require.main === module) {
             {
                 word: 'Yoga',
                 partOfSpeech: 'noun',
-                definition: 'Any of several Hindu or Buddhist disciplines aimed at training the consciousness for a state of perfect spiritual insight and tranquillity; especially a system of exercises practiced to promote control of the body and mind.'
+                definition: 'Any of several Hindu or Buddhist disciplines aimed at training the consciousness for a state of perfect spiritual insight and tranquillity.'
             },
             {
                 word: 'Highland',
                 partOfSpeech: 'noun',
                 definition: 'An area of land that is at elevation; mountainous land.'
             }
-        ]
+        ],
+        gifPath: fs.existsSync('./output.gif') ? './output.gif' : null
     };
 
     postGematria(testChannel, testData).then(console.log);
 }
 
-module.exports = { postToDiscord, postGematria, getConfiguredChannels, CHANNELS, PATTERN_IMAGE_URL };
+module.exports = { postToDiscord, postGematria, getConfiguredChannels, CHANNELS };

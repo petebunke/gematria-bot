@@ -2,8 +2,26 @@ services:
   - type: worker
     name: gematria-reply-bot
     runtime: node
-    buildCommand: npm install
+    plan: free
+    buildCommand: |
+      npm install &&
+      npx playwright install chromium &&
+      npx playwright install-deps chromium
     startCommand: node reply-bot.js
     envVars:
       - key: DISCORD_BOT_TOKEN
-        sync: false  # You'll set this manually in dashboard
+        sync: false
+      - key: DISCORD_WEBHOOK_REPLY
+        sync: false
+      - key: DISCORD_WEBHOOK_DAILY
+        sync: false
+      - key: DISCORD_WEBHOOK_WEEKLY
+        sync: false
+      - key: DISCORD_WEBHOOK_MONTHLY
+        sync: false
+      - key: DISCORD_WEBHOOK_SEASONAL
+        sync: false
+      - key: DISCORD_WEBHOOK_YEARLY
+        sync: false
+      - key: DISCORD_WEBHOOK_DECADIC
+        sync: false

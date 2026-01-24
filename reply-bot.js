@@ -5,13 +5,15 @@
  * - @bot mentions
  * - !gematria command
  * - !gem command (shortcut)
+ *
+ * Posts gematria phrase with animated GIF pattern
  */
 
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { getGematriaPhrase } = require('./scraper');
-
-const PATTERN_IMAGE_URL = 'https://raw.githubusercontent.com/petebunke/gematria-bot/main/pattern.png';
+const fs = require('fs');
+const path = require('path');
 
 const client = new Client({
     intents: [
@@ -50,44 +52,59 @@ client.on('messageCreate', async (message) => {
         // Show typing indicator
         await message.channel.sendTyping();
 
-        // Get gematria phrase
+        // Get gematria phrase with GIF
         console.log('   Fetching gematria phrase...');
         let data;
         try {
-            data = await getGematriaPhrase();
+            data = await getGematriaPhrase({ headless: true, createGif: true });
         } catch (err) {
-            console.log('   ⚠️ Scraper error, using test data');
-            data = {
-                phrase: 'test phrase',
-                values: '111/222/33/44',
-                words: [
-                    { word: 'Test', partOfSpeech: 'noun', definition: 'A procedure for testing.' },
-                    { word: 'Phrase', partOfSpeech: 'noun', definition: 'A group of words.' }
-                ]
-            };
+            console.log('   ⚠️ Scraper error:', err.message);
+            // Fallback to simple message
+            await message.reply('Sorry, I had trouble generating a phrase. Please try again!');
+            return;
         }
+
+        console.log('   Got:', data.phrase);
+
+        // Build the message content
+        const messageContent = `${data.phrase} (${data.values})`;
 
         // Build embeds for each word
         const embeds = [];
         for (const wordData of data.words || []) {
             const embed = new EmbedBuilder()
                 .setTitle(wordData.word)
-                .setDescription(`*${wordData.partOfSpeech}*\n${wordData.definition}`)
-                .setImage(PATTERN_IMAGE_URL);
+                .setDescription(`*${wordData.partOfSpeech}*\n${wordData.definition}`);
             embeds.push(embed);
         }
 
+        // Prepare reply options
+        const replyOptions = {
+            content: messageContent,
+            embeds: embeds.slice(0, 9) // Leave room for GIF embed
+        };
+
+        // Add GIF if available
+        if (data.gifPath && fs.existsSync(data.gifPath)) {
+            const attachment = new AttachmentBuilder(data.gifPath, { name: 'pattern.gif' });
+            replyOptions.files = [attachment];
+
+            // Add final embed with the GIF
+            const gifEmbed = new EmbedBuilder()
+                .setImage('attachment://pattern.gif');
+            replyOptions.embeds.push(gifEmbed);
+        }
+
         // Send the response
-        await message.reply({
-            content: `${data.phrase} (${data.values})`,
-            embeds: embeds.slice(0, 10) // Discord limits to 10 embeds
-        });
+        await message.reply(replyOptions);
 
         console.log('   ✅ Replied successfully!\n');
 
     } catch (error) {
         console.error('   ❌ Error:', error.message);
-        await message.reply('Sorry, something went wrong fetching the gematria phrase.');
+        try {
+            await message.reply('Sorry, something went wrong. Please try again!');
+        } catch (e) {}
     }
 });
 
