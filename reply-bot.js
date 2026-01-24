@@ -71,12 +71,12 @@ client.on('messageCreate', async (message) => {
         }, 5000);
         await message.channel.sendTyping();
 
-        // Generate gematria with 60s timeout
+        // Generate gematria with 120s timeout (browser launch alone takes ~20s)
         let result;
         try {
             result = await Promise.race([
                 generateGematria(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out after 60s')), 60000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out after 120s')), 120000))
             ]);
         } finally {
             clearInterval(typingInterval);
@@ -198,20 +198,25 @@ async function generateGematria() {
 
             // Click generate
             try {
+                console.log('   Clicking Generate...');
                 await page.click('button:has-text("Generate Random Phrase")', { timeout: 5000 });
+                console.log('   Clicked, waiting for result...');
             } catch (e) {
                 console.log('   Generate button not found');
                 continue;
             }
 
-            // Wait for generation (max 30s)
-            for (let i = 0; i < 30; i++) {
+            // Wait for generation (max 20s)
+            for (let i = 0; i < 20; i++) {
                 await page.waitForTimeout(1000);
                 const stillGenerating = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
-                if (!stillGenerating) break;
+                if (!stillGenerating) {
+                    console.log(`   Generation done after ${i+1}s`);
+                    break;
+                }
             }
 
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(1000);
 
             // Extract phrase
             const inputs = await page.locator('input[type="text"]').all();
