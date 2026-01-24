@@ -115,20 +115,27 @@ async function generateGematria() {
     const OUTPUT_GIF = path.join(__dirname, 'output.gif');
 
     try {
-        console.log('🚀 Starting scraper (headless: true)');
+        console.log('🚀 Starting scraper...');
+        console.log('   Chromium path:', chromium.executablePath());
 
-        browser = await chromium.launch({
+        // Launch with timeout wrapper to prevent infinite hang
+        const launchPromise = chromium.launch({
             headless: true,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--no-zygote',
-                '--single-process'
-            ],
-            timeout: 30000
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu'
+            ]
         });
+
+        browser = await Promise.race([
+            launchPromise,
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Browser launch timed out after 30s')), 30000)
+            )
+        ]);
 
         console.log('   Browser launched');
 
