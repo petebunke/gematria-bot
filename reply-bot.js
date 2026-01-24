@@ -127,16 +127,10 @@ async function generateGematria() {
         console.log('🚀 Starting scraper...');
         console.log('   Chromium path:', chromium.executablePath());
 
-        // Launch with timeout wrapper to prevent infinite hang
+        // Launch with Xvfb virtual display (headless: false like original working code)
         const launchPromise = chromium.launch({
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
+            headless: false,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
 
         browser = await Promise.race([
