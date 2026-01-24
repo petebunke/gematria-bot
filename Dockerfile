@@ -1,5 +1,5 @@
-# Use Playwright's official base image which has all browser dependencies
-FROM mcr.microsoft.com/playwright:v1.49.0-noble
+# Use Playwright's official base image matching npm package version
+FROM mcr.microsoft.com/playwright:v1.50.0-noble
 
 # Install FFmpeg
 RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
