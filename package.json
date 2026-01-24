@@ -16,7 +16,8 @@
     "post:all": "node scheduler.js --all",
     "check": "node scheduler.js --check",
     "test-scrape": "node scraper.js",
-    "test-discord": "node discord.js"
+    "test-discord": "node discord.js",
+    "reply-bot": "node reply-bot.js"
   },
   "keywords": [
     "gematria",
@@ -27,6 +28,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "discord.js": "^14.25.1",
     "dotenv": "^16.0.0",
     "node-fetch": "^3.3.2",
     "playwright": "^1.57.0",
