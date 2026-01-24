@@ -219,17 +219,21 @@ async function generateGematria() {
             await page.waitForTimeout(1000);
 
             // Extract phrase
+            console.log('   Extracting phrase...');
             const inputs = await page.locator('input[type="text"]').all();
+            console.log(`   Found ${inputs.length} text inputs`);
             for (const input of inputs) {
                 const val = await input.inputValue().catch(() => '');
                 if (val.length > 5) {
                     phrase = val;
+                    console.log(`   Got phrase: ${phrase.substring(0, 30)}...`);
                     break;
                 }
             }
 
             // Extract values
             if (phrase) {
+                console.log('   Extracting values...');
                 values = await page.evaluate(() => {
                     const els = document.querySelectorAll('*');
                     for (const el of els) {
@@ -238,6 +242,9 @@ async function generateGematria() {
                     }
                     return '';
                 }) || '';
+                console.log(`   Got values: ${values}`);
+            } else {
+                console.log('   No phrase found this attempt');
             }
         }
 
