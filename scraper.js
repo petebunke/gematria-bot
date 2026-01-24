@@ -4,7 +4,7 @@
  * This is based on the working make-gif.js script
  */
 
-const { chromium } = require("playwright");
+const { firefox } = require("playwright");
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -19,16 +19,8 @@ async function getGematriaPhrase(options = {}) {
 
     console.log("🚀 Starting scraper (headless:", headless, ")");
 
-    const browser = await chromium.launch({
-        headless,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-software-rasterizer',
-            '--disable-extensions'
-        ]
+    const browser = await firefox.launch({
+        headless
     });
 
     try {
