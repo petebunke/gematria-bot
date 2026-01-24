@@ -25,14 +25,19 @@ async function getGematriaPhrase(options = {}) {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--disable-extensions',
+            '--disable-background-networking',
+            '--single-process',
+            '--no-zygote'
         ]
     });
 
     try {
         const page = await browser.newPage({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport: { width: 1920, height: 1080 }
+            viewport: { width: 1280, height: 720 }
         });
 
         await page.goto("https://gematriagenerator.app");
