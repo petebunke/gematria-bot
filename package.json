@@ -2,9 +2,9 @@
   "name": "gematria-discord-bot",
   "version": "1.0.0",
   "description": "Discord bot that generates gematria phrases with animated GIFs and word definitions",
-  "main": "bot.js",
+  "main": "reply-bot.js",
   "scripts": {
-    "start": "node bot.js",
+    "start": "node reply-bot.js",
     "generate": "node gematria-generator.js",
     "test-dictionary": "node dictionary.js"
   },

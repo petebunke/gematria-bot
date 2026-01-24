@@ -50,4 +50,4 @@ RUN mkdir -p frames videos
 EXPOSE 8080
 
 # Run the bot
-CMD ["node", "bot.js"]
+CMD ["node", "reply-bot.js"]
