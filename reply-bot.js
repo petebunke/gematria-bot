@@ -23,7 +23,7 @@ const client = new Client({
     ]
 });
 
-client.once('ready', () => {
+client.once('clientReady', () => {
     console.log('═══════════════════════════════════════════');
     console.log('    🔢 Reply Bot Online');
     console.log('═══════════════════════════════════════════');
@@ -56,7 +56,7 @@ client.on('messageCreate', async (message) => {
         console.log('   Fetching gematria phrase...');
         let data;
         try {
-            data = await getGematriaPhrase({ headless: true, createGif: false });
+            data = await getGematriaPhrase({ headless: true, createGif: true });
         } catch (err) {
             console.log('   ⚠️ Scraper error:', err.message);
             console.log('   Full error:', err.stack);

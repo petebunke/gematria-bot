@@ -135,13 +135,59 @@ async function getGematriaPhrase(options = {}) {
         fs.writeFileSync("phrase.txt", phrase);
         fs.writeFileSync("values.txt", values);
 
-        // Parse words for definitions
-        const wordList = phrase.split(" ").filter(w => w.length > 0);
-        const words = wordList.map(word => ({
-            word: word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-            partOfSpeech: "noun",
-            definition: "A word or concept in the gematria phrase."
-        }));
+        // Scrape word definitions from the page
+        console.log("   Scraping word definitions...");
+        const words = await page.evaluate(() => {
+            const results = [];
+            // Look for definition sections - they typically have word, part of speech, and definition
+            // The website shows definitions in sections/cards for each word
+            const sections = document.querySelectorAll('div, section, article');
+
+            for (const section of sections) {
+                const text = section.innerText || '';
+                // Look for patterns like "Word\nnoun\nDefinition text"
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+
+                // Check if this looks like a definition block (has a single capitalized word followed by part of speech)
+                if (lines.length >= 3) {
+                    const possibleWord = lines[0];
+                    const possiblePos = lines[1]?.toLowerCase();
+
+                    // Check if first line is a single word and second line is a part of speech
+                    if (/^[A-Z][a-z]+$/.test(possibleWord) &&
+                        ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'interjection', 'pronoun', 'article'].includes(possiblePos)) {
+
+                        // Get the definition (rest of the text)
+                        const definition = lines.slice(2).join(' ').substring(0, 500);
+
+                        if (definition.length > 10 && !results.find(r => r.word === possibleWord)) {
+                            results.push({
+                                word: possibleWord,
+                                partOfSpeech: possiblePos,
+                                definition: definition
+                            });
+                        }
+                    }
+                }
+            }
+
+            return results;
+        });
+
+        console.log(`   Found ${words.length} word definitions`);
+
+        // If we couldn't scrape definitions, fall back to basic word list
+        if (words.length === 0) {
+            console.log("   Using fallback word extraction...");
+            const wordList = phrase.split(" ").filter(w => w.length > 0);
+            for (const word of wordList) {
+                words.push({
+                    word: word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                    partOfSpeech: "noun",
+                    definition: "A word from the gematria phrase."
+                });
+            }
+        }
 
         let gifPath = null;
 
