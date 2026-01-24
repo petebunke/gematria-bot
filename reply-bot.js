@@ -48,22 +48,36 @@ client.on('messageCreate', async (message) => {
 
     console.log(`📩 Triggered by ${message.author.tag} in #${message.channel.name}`);
 
+    // Keep typing indicator active
+    const typingInterval = setInterval(() => {
+        message.channel.sendTyping().catch(() => {});
+    }, 5000);
+
     try {
         // Show typing indicator
         await message.channel.sendTyping();
 
-        // Get gematria phrase with GIF
+        // Get gematria phrase with GIF (with 90 second timeout)
         console.log('   Fetching gematria phrase...');
         let data;
         try {
-            data = await getGematriaPhrase({ headless: true, createGif: true });
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Scraper timed out after 90 seconds')), 90000)
+            );
+            data = await Promise.race([
+                getGematriaPhrase({ headless: true, createGif: true }),
+                timeoutPromise
+            ]);
         } catch (err) {
             console.log('   ⚠️ Scraper error:', err.message);
             console.log('   Full error:', err.stack);
+            clearInterval(typingInterval);
             // Fallback to simple message
             await message.reply(`Sorry, I had trouble generating a phrase: ${err.message}`);
             return;
         }
+
+        clearInterval(typingInterval);
 
         console.log('   Got:', data.phrase);
 
@@ -102,6 +116,7 @@ client.on('messageCreate', async (message) => {
         console.log('   ✅ Replied successfully!\n');
 
     } catch (error) {
+        clearInterval(typingInterval);
         console.error('   ❌ Error:', error.message);
         try {
             await message.reply('Sorry, something went wrong. Please try again!');
