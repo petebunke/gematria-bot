@@ -4,7 +4,7 @@
  * This is based on the working make-gif.js script
  */
 
-const { firefox } = require("playwright");
+const { chromium } = require("playwright");
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -21,10 +21,20 @@ async function getGematriaPhrase(options = {}) {
 
     let browser = null;
     try {
-        console.log("   Launching browser...");
-        browser = await firefox.launch({
+        console.log("   Launching Chromium...");
+        browser = await chromium.launch({
             headless,
-            timeout: 30000
+            timeout: 60000,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-first-run',
+                '--disable-features=IsolateOrigins',
+                '--disable-site-isolation-trials',
+                '--disable-background-networking'
+            ]
         });
         console.log("   Browser launched");
 
