@@ -2,7 +2,9 @@
  * scraper.js - Scrapes gematriagenerator.app using Puppeteer
  */
 
+console.log("Loading puppeteer module...");
 const puppeteer = require("puppeteer");
+console.log("Puppeteer loaded");
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -18,7 +20,7 @@ async function getGematriaPhrase(options = {}) {
 
     let browser = null;
     try {
-        console.log("   Launching Puppeteer...");
+        console.log("   Launching Puppeteer with executablePath:", process.env.PUPPETEER_EXECUTABLE_PATH || "default");
         browser = await puppeteer.launch({
             headless: headless ? 'new' : false,
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
