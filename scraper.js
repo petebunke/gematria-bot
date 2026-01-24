@@ -19,15 +19,20 @@ async function getGematriaPhrase(options = {}) {
 
     console.log("🚀 Starting scraper (headless:", headless, ")");
 
-    const browser = await firefox.launch({
-        headless
-    });
-
+    let browser = null;
     try {
+        console.log("   Launching browser...");
+        browser = await firefox.launch({
+            headless,
+            timeout: 30000
+        });
+        console.log("   Browser launched");
+
         const page = await browser.newPage({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             viewport: { width: 1280, height: 720 }
         });
+        console.log("   Page created");
 
         await page.goto("https://gematriagenerator.app");
         await page.waitForSelector('button:has-text("Loading")', { state: "hidden", timeout: 60000 });
@@ -236,7 +241,13 @@ async function getGematriaPhrase(options = {}) {
         };
 
     } finally {
-        await browser.close();
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (e) {
+                console.log("   Warning: browser.close() failed:", e.message);
+            }
+        }
     }
 }
 
