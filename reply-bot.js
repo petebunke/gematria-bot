@@ -56,11 +56,12 @@ client.on('messageCreate', async (message) => {
         console.log('   Fetching gematria phrase...');
         let data;
         try {
-            data = await getGematriaPhrase({ headless: true, createGif: true });
+            data = await getGematriaPhrase({ headless: true, createGif: false });
         } catch (err) {
             console.log('   ⚠️ Scraper error:', err.message);
+            console.log('   Full error:', err.stack);
             // Fallback to simple message
-            await message.reply('Sorry, I had trouble generating a phrase. Please try again!');
+            await message.reply(`Sorry, I had trouble generating a phrase: ${err.message}`);
             return;
         }
 

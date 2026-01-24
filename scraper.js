@@ -21,11 +21,20 @@ async function getGematriaPhrase(options = {}) {
 
     const browser = await chromium.launch({
         headless,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--single-process'
+        ]
     });
 
     try {
-        const page = await browser.newPage();
+        const page = await browser.newPage({
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport: { width: 1920, height: 1080 }
+        });
 
         await page.goto("https://gematriagenerator.app");
         await page.waitForSelector('button:has-text("Loading")', { state: "hidden", timeout: 60000 });
