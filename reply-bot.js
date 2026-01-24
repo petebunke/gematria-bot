@@ -65,13 +65,22 @@ client.on('messageCreate', async (message) => {
         console.log(`📩 Triggered by ${message.author.username} in #${channelName}`);
         console.log('   Fetching gematria phrase...');
 
+        // Keep typing indicator active
+        const typingInterval = setInterval(() => {
+            message.channel.sendTyping().catch(() => {});
+        }, 5000);
         await message.channel.sendTyping();
 
-        // Generate gematria with timeout
-        const result = await Promise.race([
-            generateGematria(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Generation timed out after 90s')), 90000))
-        ]);
+        // Generate gematria with 60s timeout
+        let result;
+        try {
+            result = await Promise.race([
+                generateGematria(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out after 60s')), 60000))
+            ]);
+        } finally {
+            clearInterval(typingInterval);
+        }
 
         if (!result.success) {
             console.log(`❌ Generation failed: ${result.error}`);
