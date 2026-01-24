@@ -23,7 +23,7 @@ const client = new Client({
     ]
 });
 
-client.once('clientReady', () => {
+client.once('ready', () => {
     console.log('═══════════════════════════════════════════');
     console.log('    🔢 Reply Bot Online');
     console.log('═══════════════════════════════════════════');
