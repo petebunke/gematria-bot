@@ -3,8 +3,8 @@ services:
     name: gematria-reply-bot
     runtime: node
     plan: free
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: node reply-bot.js
+    buildCommand: npm install
+    startCommand: npx playwright install chromium && npx playwright install-deps chromium && node reply-bot.js
     envVars:
       - key: DISCORD_BOT_TOKEN
         sync: false
