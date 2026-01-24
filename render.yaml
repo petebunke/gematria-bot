@@ -5,23 +5,10 @@ services:
     plan: free
     buildCommand: |
       npm install &&
-      npx playwright install chromium &&
-      npx playwright install-deps chromium
+      npx playwright install --with-deps chromium
     startCommand: node reply-bot.js
     envVars:
       - key: DISCORD_BOT_TOKEN
         sync: false
-      - key: DISCORD_WEBHOOK_REPLY
-        sync: false
-      - key: DISCORD_WEBHOOK_DAILY
-        sync: false
-      - key: DISCORD_WEBHOOK_WEEKLY
-        sync: false
-      - key: DISCORD_WEBHOOK_MONTHLY
-        sync: false
-      - key: DISCORD_WEBHOOK_SEASONAL
-        sync: false
-      - key: DISCORD_WEBHOOK_YEARLY
-        sync: false
-      - key: DISCORD_WEBHOOK_DECADIC
-        sync: false
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/.cache/ms-playwright
