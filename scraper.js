@@ -1,17 +1,14 @@
 /**
- * scraper.js - Scrapes gematriagenerator.app using Playwright
- *
- * This is based on the working make-gif.js script
+ * scraper.js - Scrapes gematriagenerator.app using Puppeteer
  */
 
-const { chromium } = require("playwright");
+const puppeteer = require("puppeteer");
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
 /**
  * Scrape gematria phrase and optionally create GIF
- * Uses exact logic from make-gif.js
  */
 async function getGematriaPhrase(options = {}) {
     const headless = options.headless !== false;
@@ -21,34 +18,38 @@ async function getGematriaPhrase(options = {}) {
 
     let browser = null;
     try {
-        console.log("   Launching Chromium...");
-        browser = await chromium.launch({
-            headless,
-            timeout: 60000,
+        console.log("   Launching Puppeteer...");
+        browser = await puppeteer.launch({
+            headless: headless ? 'new' : false,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
                 '--no-first-run',
-                '--disable-features=IsolateOrigins',
-                '--disable-site-isolation-trials',
-                '--disable-background-networking'
+                '--disable-extensions'
             ]
         });
         console.log("   Browser launched");
 
-        const page = await browser.newPage({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            viewport: { width: 1280, height: 720 }
-        });
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setViewport({ width: 1280, height: 720 });
         console.log("   Page created");
 
-        await page.goto("https://gematriagenerator.app");
-        await page.waitForSelector('button:has-text("Loading")', { state: "hidden", timeout: 60000 });
+        await page.goto("https://gematriagenerator.app", { waitUntil: 'networkidle2', timeout: 60000 });
         console.log("   Page loaded");
 
-        await page.locator('input[type="checkbox"]').check();
+        // Wait for loading to finish
+        await page.waitForFunction(() => {
+            const btns = Array.from(document.querySelectorAll('button'));
+            return !btns.some(b => b.textContent.includes('Loading'));
+        }, { timeout: 60000 });
+
+        // Check the checkbox
+        const checkbox = await page.$('input[type="checkbox"]');
+        if (checkbox) await checkbox.click();
 
         let phrase = "";
         let values = "";
@@ -60,49 +61,48 @@ async function getGematriaPhrase(options = {}) {
 
             // Close error modal if present
             try {
-                const closeBtn = page.locator('button:has-text("Close")').first();
-                if (await closeBtn.isVisible({ timeout: 500 })) {
-                    console.log("   Closing error modal...");
-                    await closeBtn.click();
-                    await page.waitForTimeout(500);
-                    continue;
+                const closeBtn = await page.$('button');
+                const buttons = await page.$$('button');
+                for (const btn of buttons) {
+                    const text = await page.evaluate(el => el.textContent, btn);
+                    if (text.includes('Close')) {
+                        await btn.click();
+                        await new Promise(r => setTimeout(r, 500));
+                        break;
+                    }
                 }
             } catch (e) {}
 
-            // Clear if needed
-            try {
-                const clearBtn = page.locator('button:has-text("Clear")');
-                if (await clearBtn.isVisible({ timeout: 500 })) {
-                    await clearBtn.click();
-                    await page.waitForTimeout(500);
+            // Click generate button
+            const buttons = await page.$$('button');
+            for (const btn of buttons) {
+                const text = await page.evaluate(el => el.textContent, btn);
+                if (text.includes('Generate Random Phrase')) {
+                    await btn.click();
+                    break;
                 }
-            } catch (e) {}
-
-            await page.click('button:has-text("Generate Random Phrase")');
+            }
 
             // Wait for completion
             for (let i = 0; i < 60; i++) {
-                await page.waitForTimeout(1000);
-                const hasError = await page.locator('button:has-text("Close")').isVisible().catch(() => false);
-                if (hasError) {
-                    console.log("   Error detected");
-                    break;
-                }
-                const stillGenerating = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
+                await new Promise(r => setTimeout(r, 1000));
+                const stillGenerating = await page.evaluate(() => {
+                    const btns = Array.from(document.querySelectorAll('button'));
+                    return btns.some(b => b.textContent.includes('Generating'));
+                });
                 if (!stillGenerating) {
                     console.log("   Generation finished");
                     break;
                 }
             }
 
-            await page.waitForTimeout(2000);
+            await new Promise(r => setTimeout(r, 2000));
 
             // Find the phrase input
-            const allInputs = await page.locator("input").all();
-            for (let i = 0; i < allInputs.length; i++) {
-                const val = await allInputs[i].inputValue().catch(() => "");
-                const type = await allInputs[i].getAttribute("type");
-                if (type === "text" && val.length > 10) {
+            const inputs = await page.$$('input[type="text"]');
+            for (const input of inputs) {
+                const val = await page.evaluate(el => el.value, input);
+                if (val && val.length > 10) {
                     phrase = val;
                     console.log("   Found phrase:", phrase.substring(0, 50) + "...");
                     break;
@@ -110,25 +110,18 @@ async function getGematriaPhrase(options = {}) {
             }
 
             if (phrase) {
-                // Get the red text values
-                try {
-                    const redText = await page.evaluate(() => {
-                        const elements = document.querySelectorAll("*");
-                        for (const el of elements) {
-                            const text = el.textContent.trim();
-                            if (/^\d+\/\d+\/\d+\/\d+$/.test(text)) {
-                                return text;
-                            }
+                // Get the values
+                values = await page.evaluate(() => {
+                    const elements = document.querySelectorAll("*");
+                    for (const el of elements) {
+                        const text = el.textContent.trim();
+                        if (/^\d+\/\d+\/\d+\/\d+$/.test(text)) {
+                            return text;
                         }
-                        return null;
-                    });
-                    if (redText) {
-                        values = redText;
-                        console.log("   Found values:", values);
                     }
-                } catch (e) {
-                    console.log("   Could not get values:", e.message);
-                }
+                    return "";
+                });
+                if (values) console.log("   Found values:", values);
             }
         }
 
@@ -141,51 +134,34 @@ async function getGematriaPhrase(options = {}) {
         console.log("✅ Phrase:", phrase);
         console.log("   Values:", values);
 
-        fs.writeFileSync("phrase.txt", phrase);
-        fs.writeFileSync("values.txt", values);
-
-        // Scrape word definitions from the page
+        // Scrape word definitions
         console.log("   Scraping word definitions...");
         const words = await page.evaluate(() => {
             const results = [];
-            // Look for definition sections - they typically have word, part of speech, and definition
-            // The website shows definitions in sections/cards for each word
             const sections = document.querySelectorAll('div, section, article');
 
             for (const section of sections) {
                 const text = section.innerText || '';
-                // Look for patterns like "Word\nnoun\nDefinition text"
                 const lines = text.split('\n').map(l => l.trim()).filter(l => l);
 
-                // Check if this looks like a definition block (has a single capitalized word followed by part of speech)
                 if (lines.length >= 3) {
                     const possibleWord = lines[0];
                     const possiblePos = lines[1]?.toLowerCase();
 
-                    // Check if first line is a single word and second line is a part of speech
                     if (/^[A-Z][a-z]+$/.test(possibleWord) &&
                         ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'interjection', 'pronoun', 'article'].includes(possiblePos)) {
-
-                        // Get the definition (rest of the text)
                         const definition = lines.slice(2).join(' ').substring(0, 500);
-
                         if (definition.length > 10 && !results.find(r => r.word === possibleWord)) {
-                            results.push({
-                                word: possibleWord,
-                                partOfSpeech: possiblePos,
-                                definition: definition
-                            });
+                            results.push({ word: possibleWord, partOfSpeech: possiblePos, definition });
                         }
                     }
                 }
             }
-
             return results;
         });
 
         console.log(`   Found ${words.length} word definitions`);
 
-        // If we couldn't scrape definitions, fall back to basic word list
         if (words.length === 0) {
             console.log("   Using fallback word extraction...");
             const wordList = phrase.split(" ").filter(w => w.length > 0);
@@ -202,32 +178,30 @@ async function getGematriaPhrase(options = {}) {
 
         // Create GIF if requested
         if (createGif) {
-            // Clean old frames
             const framesDir = "./frames";
-            if (fs.existsSync(framesDir)) {
-                fs.rmSync(framesDir, { recursive: true });
-            }
+            if (fs.existsSync(framesDir)) fs.rmSync(framesDir, { recursive: true });
             fs.mkdirSync(framesDir);
 
-            // Find the big SVG
-            let targetSvg = null;
-            const svgs = await page.locator("svg").all();
-
-            for (const svg of svgs) {
-                const box = await svg.boundingBox();
-                if (box && box.width > 200 && box.height > 100) {
-                    targetSvg = svg;
-                    await svg.scrollIntoViewIfNeeded();
-                    console.log("   Found SVG:", box.width, "x", box.height);
-                    break;
+            // Find SVG and capture frames
+            const svgBox = await page.evaluate(() => {
+                const svgs = document.querySelectorAll('svg');
+                for (const svg of svgs) {
+                    const rect = svg.getBoundingClientRect();
+                    if (rect.width > 200 && rect.height > 100) {
+                        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                    }
                 }
-            }
+                return null;
+            });
 
-            if (targetSvg) {
+            if (svgBox) {
                 console.log("🎬 Capturing 30 frames...");
                 for (let i = 0; i < 30; i++) {
-                    await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png` });
-                    await page.waitForTimeout(100);
+                    await page.screenshot({
+                        path: `./frames/frame${String(i).padStart(3, "0")}.png`,
+                        clip: svgBox
+                    });
+                    await new Promise(r => setTimeout(r, 100));
                 }
 
                 console.log("   Converting to GIF...");
@@ -243,12 +217,7 @@ async function getGematriaPhrase(options = {}) {
             }
         }
 
-        return {
-            phrase,
-            values,
-            words,
-            gifPath
-        };
+        return { phrase, values, words, gifPath };
 
     } finally {
         if (browser) {
