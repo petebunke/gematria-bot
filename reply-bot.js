@@ -9,6 +9,10 @@
  * Posts gematria phrase with animated GIF pattern
  */
 
+console.log('=== REPLY BOT STARTING (v2) ===');
+console.log('Node version:', process.version);
+console.log('PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
+
 require('dotenv').config();
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { getGematriaPhrase } = require('./scraper');
