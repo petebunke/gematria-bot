@@ -1,28 +1,24 @@
 {
-  "name": "gematria-phrase-poster",
+  "name": "gematria-discord-bot",
   "version": "1.0.0",
-  "description": "Generate gematria phrases and post to social media (Bluesky, Mastodon, Discord, Telegram, Facebook)",
-  "main": "index.js",
+  "description": "Discord bot that generates gematria phrases with animated GIFs and word definitions",
+  "main": "bot.js",
   "scripts": {
-    "start": "node index.js",
-    "test-scrape": "node src/scraper.js",
-    "post-bluesky": "node src/platforms/bluesky.js",
-    "post-mastodon": "node src/platforms/mastodon.js",
-    "post-discord": "node src/platforms/discord.js",
-    "post-telegram": "node src/platforms/telegram.js"
+    "start": "node bot.js",
+    "generate": "node gematria-generator.js",
+    "test-dictionary": "node dictionary.js"
   },
   "keywords": [
     "gematria",
-    "social-media",
+    "discord",
     "bot",
-    "bluesky",
-    "mastodon"
+    "aik-bekar"
   ],
   "license": "MIT",
   "dependencies": {
+    "discord.js": "^14.14.1",
     "dotenv": "^16.0.0",
-    "node-fetch": "^3.3.2",
-    "playwright": "^1.57.0",
-    "puppeteer": "^24.35.0"
+    "form-data": "^4.0.0",
+    "playwright": "^1.57.0"
   }
 }

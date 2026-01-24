@@ -1,0 +1,8 @@
+node_modules
+.git
+.env
+*.png
+*.gif
+frames/
+videos/
+*.log
