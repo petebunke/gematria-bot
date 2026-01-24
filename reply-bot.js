@@ -16,7 +16,9 @@ const PORT = process.env.PORT || 8080;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('OK');
-}).listen(PORT);
+}).listen(PORT, '0.0.0.0', () => {
+    console.log(`Health server listening on 0.0.0.0:${PORT}`);
+});
 
 // Dictionary API
 const DICTIONARY_API = 'https://api.dictionaryapi.dev/api/v2/entries/en';
