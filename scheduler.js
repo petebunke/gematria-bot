@@ -12,7 +12,7 @@
  */
 
 require('dotenv').config();
-const { postToDiscord, getConfiguredChannels } = require('./discord');
+const { postGematria, getConfiguredChannels } = require('./discord');
 const { getGematriaPhrase } = require('./scraper');
 
 // Seasonal dates (approximate equinoxes and solstices)
@@ -66,39 +66,10 @@ function getChannelsToPost(date = new Date()) {
 }
 
 /**
- * Format message for a specific channel
- */
-function formatMessage(channel, gematriaData) {
-    const { phrase, value } = gematriaData;
-
-    if (!phrase || !value) {
-        return `🔢 Gematria Bot is running! Configure the scraper to start posting real content.`;
-    }
-
-    const prefixes = {
-        reply: '🔢 Reply Gematria',
-        daily: '🔢 Daily Gematria',
-        weekly: '🔢 Weekly Gematria',
-        monthly: '🔢 Monthly Gematria',
-        seasonal: '🔢 Seasonal Gematria',
-        yearly: '🔢 Yearly Gematria',
-        decadic: '🔢 Decadic Gematria'
-    };
-
-    return `${prefixes[channel] || '🔢 Gematria'}
-
-"${phrase}"
-
-= ${value}
-
-#gematria #numerology`;
-}
-
-/**
  * Run the scheduler - posts to all channels that should post today
  */
 async function runScheduler(options = {}) {
-    const forceChannels = options.channels || null; // Override: post to specific channels
+    const forceChannels = options.channels || null;
     const date = options.date || new Date();
 
     console.log('═══════════════════════════════════════════');
@@ -125,10 +96,18 @@ async function runScheduler(options = {}) {
     let gematriaData;
     try {
         gematriaData = await getGematriaPhrase();
-        console.log('   Got:', gematriaData.phrase ? `"${gematriaData.phrase}" = ${gematriaData.value}` : '(scraper needs configuration)');
+        console.log('   Got:', gematriaData.phrase || '(scraper needs configuration)');
     } catch (err) {
         console.log('   ⚠️  Scraper error:', err.message);
-        gematriaData = { phrase: null, value: null };
+        // Use test data if scraper fails
+        gematriaData = {
+            phrase: 'test phrase',
+            values: '111/222/33/44',
+            words: [
+                { word: 'Test', partOfSpeech: 'noun', definition: 'A procedure for testing.' },
+                { word: 'Phrase', partOfSpeech: 'noun', definition: 'A group of words.' }
+            ]
+        };
     }
 
     // Post to each scheduled channel
@@ -136,14 +115,7 @@ async function runScheduler(options = {}) {
     const results = {};
 
     for (const channel of channelsToPost) {
-        const message = formatMessage(channel, gematriaData);
-        results[channel] = await postToDiscord(channel, message, {
-            embed: {
-                title: `🔢 ${channel.charAt(0).toUpperCase() + channel.slice(1)} Gematria`,
-                description: message,
-                color: 0x9B59B6
-            }
-        });
+        results[channel] = await postGematria(channel, gematriaData);
     }
 
     // Summary
@@ -171,7 +143,7 @@ async function runScheduler(options = {}) {
 }
 
 /**
- * Post to a specific channel manually (for reply or testing)
+ * Post to a specific channel manually
  */
 async function postToChannel(channel) {
     console.log(`📤 Manual post to ${channel}...\n`);
@@ -180,17 +152,17 @@ async function postToChannel(channel) {
     try {
         gematriaData = await getGematriaPhrase();
     } catch (err) {
-        gematriaData = { phrase: null, value: null };
+        gematriaData = {
+            phrase: 'test phrase',
+            values: '111/222/33/44',
+            words: [
+                { word: 'Test', partOfSpeech: 'noun', definition: 'A procedure for testing.' },
+                { word: 'Phrase', partOfSpeech: 'noun', definition: 'A group of words.' }
+            ]
+        };
     }
 
-    const message = formatMessage(channel, gematriaData);
-    return postToDiscord(channel, message, {
-        embed: {
-            title: `🔢 ${channel.charAt(0).toUpperCase() + channel.slice(1)} Gematria`,
-            description: message,
-            color: 0x9B59B6
-        }
-    });
+    return postGematria(channel, gematriaData);
 }
 
 // CLI interface
@@ -246,4 +218,4 @@ Examples:
     }
 }
 
-module.exports = { runScheduler, postToChannel, getChannelsToPost, formatMessage };
+module.exports = { runScheduler, postToChannel, getChannelsToPost };

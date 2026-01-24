@@ -1,0 +1,52 @@
+name: Scheduled Gematria Posts
+
+on:
+  schedule:
+    # Daily at 12:00 PM UTC (adjust timezone as needed)
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Specific channel to post to (leave empty for scheduled)'
+        required: false
+        default: ''
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          DISCORD_WEBHOOK_REPLY=${{ secrets.DISCORD_WEBHOOK_REPLY }}
+          DISCORD_WEBHOOK_DAILY=${{ secrets.DISCORD_WEBHOOK_DAILY }}
+          DISCORD_WEBHOOK_WEEKLY=${{ secrets.DISCORD_WEBHOOK_WEEKLY }}
+          DISCORD_WEBHOOK_MONTHLY=${{ secrets.DISCORD_WEBHOOK_MONTHLY }}
+          DISCORD_WEBHOOK_SEASONAL=${{ secrets.DISCORD_WEBHOOK_SEASONAL }}
+          DISCORD_WEBHOOK_YEARLY=${{ secrets.DISCORD_WEBHOOK_YEARLY }}
+          DISCORD_WEBHOOK_DECADIC=${{ secrets.DISCORD_WEBHOOK_DECADIC }}
+          EOF
+
+      - name: Run scheduler
+        if: ${{ github.event.inputs.channel == '' }}
+        run: node scheduler.js
+
+      - name: Post to specific channel
+        if: ${{ github.event.inputs.channel != '' }}
+        run: node scheduler.js --channel ${{ github.event.inputs.channel }}
