@@ -1,0 +1,9 @@
+services:
+  - type: worker
+    name: gematria-reply-bot
+    runtime: node
+    buildCommand: npm install
+    startCommand: node reply-bot.js
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false  # You'll set this manually in dashboard
