@@ -27,10 +27,7 @@ async function getGematriaPhrase(options = {}) {
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--disable-software-rasterizer',
-            '--disable-extensions',
-            '--disable-background-networking',
-            '--single-process',
-            '--no-zygote'
+            '--disable-extensions'
         ]
     });
 
