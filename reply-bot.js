@@ -74,33 +74,26 @@ client.on('messageCreate', async (message) => {
 
         console.log('   Got:', data.phrase);
 
-        // Build the message content with bold phrase and values
-        let messageContent = `**${data.phrase}**`;
-        if (data.values) {
-            messageContent += `\n${data.values}`;
-        }
+        // Build the message content - phrase with values in parentheses
+        const messageContent = `${data.phrase} (${data.values})`;
 
-        // Build embeds
+        // Build embeds for word definitions
         const embeds = [];
 
-        // Add gematria values embed with inline fields
-        if (data.hebrewValue || data.englishValue || data.simpleValue || data.aikBekarValue) {
-            const valuesEmbed = new EmbedBuilder()
-                .setTitle('Gematria Values')
-                .setColor(0xDC2626)
-                .addFields(
-                    { name: 'Hebrew', value: data.hebrewValue || '-', inline: true },
-                    { name: 'English', value: data.englishValue || '-', inline: true },
-                    { name: 'Simple', value: data.simpleValue || '-', inline: true },
-                    { name: 'Aik Bekar⁹', value: data.aikBekarValue || '-', inline: true }
-                );
-            embeds.push(valuesEmbed);
+        // Add word definition embeds
+        for (const wordData of data.words || []) {
+            if (wordData.definition) {
+                const embed = new EmbedBuilder()
+                    .setTitle(wordData.word)
+                    .setDescription(`*${wordData.partOfSpeech}*\n${wordData.definition}`);
+                embeds.push(embed);
+            }
         }
 
         // Prepare reply options
         const replyOptions = {
             content: messageContent,
-            embeds: embeds
+            embeds: embeds.slice(0, 9) // Leave room for GIF embed
         };
 
         // Add GIF if available

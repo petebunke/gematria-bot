@@ -241,13 +241,56 @@ async function getGematriaPhrase(options = {}) {
         fs.writeFileSync("phrase.txt", phrase);
         fs.writeFileSync("values.txt", values);
 
-        // Parse words for definitions (capitalize first letter)
-        const wordList = phrase.split(" ").filter(w => w.length > 0);
-        const words = wordList.map(word => ({
-            word: word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-            partOfSpeech: "noun",
-            definition: "A word in the gematria phrase."
-        }));
+        // Scrape word definitions from the page
+        const words = [];
+        try {
+            console.log("   Scraping word definitions...");
+            const definitions = await page.evaluate(() => {
+                const results = [];
+                // Look for definition sections - they have word titles and definitions
+                const headings = document.querySelectorAll('h3, h4, .font-bold');
+                headings.forEach(heading => {
+                    const word = heading.textContent.trim();
+                    // Skip non-word headings
+                    if (word && word.length > 1 && word.length < 30 && !word.includes('/') && !word.includes(':')) {
+                        const parent = heading.parentElement;
+                        if (parent) {
+                            const italicEl = parent.querySelector('em, i, .italic');
+                            const partOfSpeech = italicEl ? italicEl.textContent.trim() : 'noun';
+
+                            // Find definition text (usually follows the part of speech)
+                            const allText = parent.textContent;
+                            const defMatch = allText.match(/(?:noun|verb|adjective|adverb)\s*(.+)/i);
+                            const definition = defMatch ? defMatch[1].trim().substring(0, 200) : '';
+
+                            if (definition && definition.length > 10) {
+                                results.push({ word, partOfSpeech, definition });
+                            }
+                        }
+                    }
+                });
+                return results;
+            });
+
+            if (definitions && definitions.length > 0) {
+                words.push(...definitions);
+                console.log("   Found", definitions.length, "word definitions");
+            }
+        } catch (e) {
+            console.log("   Could not scrape definitions:", e.message);
+        }
+
+        // Fallback: create basic word list if no definitions found
+        if (words.length === 0) {
+            const wordList = phrase.split(" ").filter(w => w.length > 0);
+            wordList.forEach(word => {
+                words.push({
+                    word: word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+                    partOfSpeech: "noun",
+                    definition: ""
+                });
+            });
+        }
 
         let gifPath = null;
 
