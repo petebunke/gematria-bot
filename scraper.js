@@ -67,13 +67,15 @@ async function getGematriaPhrase(options = {}) {
 
         console.log("   Page loaded");
 
-        // Check Aik Bekar checkbox
-        try {
-            await page.locator('input[type="checkbox"]').check({ timeout: 5000 });
-            console.log("   Aik Bekar checkbox checked");
-        } catch (e) {
-            console.log("   Could not check Aik Bekar checkbox:", e.message);
-        }
+        // Note: Aik Bekar checkbox makes matching much harder (4 repdigits vs 3)
+        // Skip checking it for now to improve success rate
+        // try {
+        //     await page.locator('input[type="checkbox"]').check({ timeout: 5000 });
+        //     console.log("   Aik Bekar checkbox checked");
+        // } catch (e) {
+        //     console.log("   Could not check Aik Bekar checkbox:", e.message);
+        // }
+        console.log("   Skipping Aik Bekar checkbox (easier to find matches)");
 
         let phrase = "";
         let values = "";
