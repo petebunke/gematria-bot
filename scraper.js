@@ -119,6 +119,8 @@ async function getGematriaPhrase(options = {}) {
             console.log("   Clicking Generate Random Phrase...");
             try {
                 await page.click('button:has-text("Generate Random Phrase")', { timeout: 10000 });
+                // Wait for button to change to Generating state
+                await page.waitForTimeout(500);
             } catch (e) {
                 console.log("   Could not click generate button:", e.message);
                 continue;
@@ -126,18 +128,39 @@ async function getGematriaPhrase(options = {}) {
 
             // Wait for completion (max 180 seconds per attempt - website is slow)
             console.log("   Waiting for generation (this can take 2-3 minutes)...");
+            let generationStarted = false;
             for (let i = 0; i < 180; i++) {
                 await page.waitForTimeout(1000);
+
+                // Check for error modal
                 const hasError = await page.locator('button:has-text("Close")').isVisible().catch(() => false);
                 if (hasError) {
                     console.log("   Error modal detected after", i, "seconds, will retry");
                     break;
                 }
-                const stillGenerating = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
-                if (!stillGenerating) {
+
+                // Check if still generating (look for disabled button or "Generating" text)
+                const generatingBtn = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
+                const disabledBtn = await page.locator('button[disabled]:has-text("Generate")').isVisible().catch(() => false);
+
+                if (generatingBtn || disabledBtn) {
+                    generationStarted = true;
+                }
+
+                // If generation started and button is no longer generating, we're done
+                if (generationStarted && !generatingBtn && !disabledBtn) {
                     console.log("   Generation finished after", i, "seconds");
                     break;
                 }
+
+                // If we haven't seen generation start after 10 seconds, something's wrong
+                if (i === 10 && !generationStarted) {
+                    console.log("   Generation doesn't seem to have started, checking page state...");
+                    // Try to get button text for debugging
+                    const btnText = await page.locator('button').first().textContent().catch(() => "unknown");
+                    console.log("   First button text:", btnText);
+                }
+
                 if (i % 30 === 29) {
                     console.log("   Still generating... (" + (i+1) + "s)");
                 }
