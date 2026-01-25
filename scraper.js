@@ -283,9 +283,9 @@ async function getGematriaPhrase(options = {}) {
             }
 
             if (targetSvg) {
-                console.log("🎬 Capturing 15 frames...");
+                console.log("🎬 Capturing 30 frames...");
                 let framesCaptured = 0;
-                for (let i = 0; i < 15; i++) {
+                for (let i = 0; i < 30; i++) {
                     try {
                         await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png`, timeout: 10000 });
                         framesCaptured++;
