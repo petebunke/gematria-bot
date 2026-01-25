@@ -88,14 +88,21 @@ async function getGematriaPhrase(options = {}) {
             attempts++;
             console.log("   Attempt", attempts, "of", maxAttempts);
 
-            // Close error modal if present
+            // Close error modal if present - wait for it to fully close
             try {
                 const closeBtn = page.locator('button:has-text("Close")').first();
                 if (await closeBtn.isVisible({ timeout: 1000 })) {
                     console.log("   Closing error modal...");
                     await closeBtn.click();
-                    await page.waitForTimeout(500);
-                    continue;
+                    // Wait for modal to fully disappear
+                    await page.waitForTimeout(2000);
+                    // Wait for the overlay to be gone
+                    try {
+                        await page.waitForSelector('.fixed.inset-0', { state: 'hidden', timeout: 5000 });
+                    } catch (e) {
+                        console.log("   Modal overlay still present, waiting more...");
+                        await page.waitForTimeout(2000);
+                    }
                 }
             } catch (e) {}
 
@@ -108,30 +115,30 @@ async function getGematriaPhrase(options = {}) {
                 }
             } catch (e) {}
 
-            // Click generate button
+            // Click generate button with longer timeout
             console.log("   Clicking Generate Random Phrase...");
             try {
-                await page.click('button:has-text("Generate Random Phrase")', { timeout: 5000 });
+                await page.click('button:has-text("Generate Random Phrase")', { timeout: 10000 });
             } catch (e) {
                 console.log("   Could not click generate button:", e.message);
                 continue;
             }
 
-            // Wait for completion (max 30 seconds per attempt)
-            console.log("   Waiting for generation...");
-            for (let i = 0; i < 30; i++) {
+            // Wait for completion (max 180 seconds per attempt - website is slow)
+            console.log("   Waiting for generation (this can take 2-3 minutes)...");
+            for (let i = 0; i < 180; i++) {
                 await page.waitForTimeout(1000);
                 const hasError = await page.locator('button:has-text("Close")').isVisible().catch(() => false);
                 if (hasError) {
-                    console.log("   Error modal detected, will retry");
+                    console.log("   Error modal detected after", i, "seconds, will retry");
                     break;
                 }
                 const stillGenerating = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
                 if (!stillGenerating) {
-                    console.log("   Generation finished");
+                    console.log("   Generation finished after", i, "seconds");
                     break;
                 }
-                if (i % 10 === 9) {
+                if (i % 30 === 29) {
                     console.log("   Still generating... (" + (i+1) + "s)");
                 }
             }
