@@ -5,11 +5,19 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test-scrape": "node src/scraper.js",
-    "post-bluesky": "node src/platforms/bluesky.js",
-    "post-mastodon": "node src/platforms/mastodon.js",
-    "post-discord": "node src/platforms/discord.js",
-    "post-telegram": "node src/platforms/telegram.js"
+    "scheduler": "node scheduler.js",
+    "post:daily": "node scheduler.js --channel daily",
+    "post:weekly": "node scheduler.js --channel weekly",
+    "post:monthly": "node scheduler.js --channel monthly",
+    "post:seasonal": "node scheduler.js --channel seasonal",
+    "post:yearly": "node scheduler.js --channel yearly",
+    "post:decadic": "node scheduler.js --channel decadic",
+    "post:reply": "node scheduler.js --channel reply",
+    "post:all": "node scheduler.js --all",
+    "check": "node scheduler.js --check",
+    "test-scrape": "node scraper.js",
+    "test-discord": "node discord.js",
+    "reply-bot": "node reply-bot.js"
   },
   "keywords": [
     "gematria",
@@ -20,7 +28,9 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "discord.js": "^14.25.1",
     "dotenv": "^16.0.0",
+    "form-data": "^4.0.5",
     "node-fetch": "^3.3.2",
     "playwright": "^1.57.0",
     "puppeteer": "^24.35.0"

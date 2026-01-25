@@ -1,0 +1,13 @@
+# Environment variables (contains secrets!)
+.env
+
+# Node modules
+node_modules/
+
+# Debug files
+*.log
+debug-screenshot.png
+
+# OS files
+.DS_Store
+Thumbs.db
