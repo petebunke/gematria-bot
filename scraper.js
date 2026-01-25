@@ -283,21 +283,33 @@ async function getGematriaPhrase(options = {}) {
             }
 
             if (targetSvg) {
-                console.log("🎬 Capturing 30 frames...");
-                for (let i = 0; i < 30; i++) {
-                    await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png` });
-                    await page.waitForTimeout(100);
+                console.log("🎬 Capturing 15 frames...");
+                let framesCaptured = 0;
+                for (let i = 0; i < 15; i++) {
+                    try {
+                        await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png`, timeout: 10000 });
+                        framesCaptured++;
+                    } catch (e) {
+                        console.log("   Screenshot", i, "failed:", e.message.split('\n')[0]);
+                        break;
+                    }
+                    await page.waitForTimeout(200);
                 }
 
-                console.log("   Converting to GIF...");
-                try {
-                    execSync('ffmpeg -y -i ./frames/frame%03d.png -vf "pad=iw+6:ih:3:0:black,split[s0][s1];[s0]palettegen=max_colors=256:reserve_transparent=0:stats_mode=single[p];[s1][p]paletteuse=dither=floyd_steinberg" output.gif', {
-                        stdio: 'pipe'
-                    });
-                    gifPath = path.resolve("output.gif");
-                    console.log("   ✅ Saved output.gif");
-                } catch (e) {
-                    console.log("   ⚠️ ffmpeg failed:", e.message);
+                console.log("   Captured", framesCaptured, "frames");
+                if (framesCaptured >= 3) {
+                    console.log("   Converting to GIF...");
+                    try {
+                        execSync('ffmpeg -y -i ./frames/frame%03d.png -vf "pad=iw+6:ih:3:0:black,split[s0][s1];[s0]palettegen=max_colors=256:reserve_transparent=0:stats_mode=single[p];[s1][p]paletteuse=dither=floyd_steinberg" output.gif', {
+                            stdio: 'pipe'
+                        });
+                        gifPath = path.resolve("output.gif");
+                        console.log("   ✅ Saved output.gif");
+                    } catch (e) {
+                        console.log("   ⚠️ ffmpeg failed:", e.message);
+                    }
+                } else {
+                    console.log("   Not enough frames for GIF, skipping");
                 }
             }
         }
