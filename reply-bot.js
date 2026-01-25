@@ -180,38 +180,45 @@ async function generateGematria() {
         for (let attempt = 1; attempt <= 10 && !phrase; attempt++) {
             console.log(`   Attempt ${attempt}/10...`);
 
-            // Close any error modals
-            try {
-                const closeBtn = page.locator('button:has-text("Close")').first();
-                if (await closeBtn.isVisible({ timeout: 500 })) {
-                    await closeBtn.click();
-                    await page.waitForTimeout(500);
+            // Close error modals / clear using evaluate (faster)
+            await page.evaluate(() => {
+                const btns = document.querySelectorAll('button');
+                for (const btn of btns) {
+                    if (btn.textContent?.includes('Close') || btn.textContent?.includes('Clear')) {
+                        btn.click();
+                    }
                 }
-            } catch (e) {}
+            }).catch(() => {});
+            await page.waitForTimeout(300);
 
-            // Clear previous
-            try {
-                const clearBtn = page.locator('button:has-text("Clear")');
-                if (await clearBtn.isVisible({ timeout: 500 })) {
-                    await clearBtn.click();
-                    await page.waitForTimeout(500);
+            // Click generate using evaluate (faster)
+            console.log('   Clicking Generate...');
+            const clicked = await page.evaluate(() => {
+                const btns = document.querySelectorAll('button');
+                for (const btn of btns) {
+                    if (btn.textContent?.includes('Generate Random Phrase')) {
+                        btn.click();
+                        return true;
+                    }
                 }
-            } catch (e) {}
-
-            // Click generate
-            try {
-                console.log('   Clicking Generate...');
-                await page.click('button:has-text("Generate Random Phrase")', { timeout: 5000 });
-                console.log('   Clicked, waiting for result...');
-            } catch (e) {
+                return false;
+            });
+            if (!clicked) {
                 console.log('   Generate button not found');
                 continue;
             }
+            console.log('   Clicked, waiting for result...');
 
-            // Wait for generation (max 20s)
+            // Wait for generation (max 20s) using evaluate
             for (let i = 0; i < 20; i++) {
                 await page.waitForTimeout(1000);
-                const stillGenerating = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
+                const stillGenerating = await page.evaluate(() => {
+                    const btns = document.querySelectorAll('button');
+                    for (const btn of btns) {
+                        if (btn.textContent?.includes('Generating')) return true;
+                    }
+                    return false;
+                }).catch(() => false);
                 if (!stillGenerating) {
                     console.log(`   Generation done after ${i+1}s`);
                     break;
@@ -220,21 +227,22 @@ async function generateGematria() {
 
             await page.waitForTimeout(1000);
 
-            // Extract phrase
+            // Extract phrase using evaluate (faster than locators)
             console.log('   Extracting phrase...');
-            const inputs = await page.locator('input[type="text"]').all();
-            console.log(`   Found ${inputs.length} text inputs`);
-            for (const input of inputs) {
-                const val = await input.inputValue().catch(() => '');
-                if (val.length > 5) {
-                    phrase = val;
-                    console.log(`   Got phrase: ${phrase.substring(0, 30)}...`);
-                    break;
+            phrase = await page.evaluate(() => {
+                const inputs = document.querySelectorAll('input[type="text"]');
+                for (const input of inputs) {
+                    if (input.value && input.value.length > 5) {
+                        return input.value;
+                    }
                 }
-            }
+                return '';
+            }) || '';
 
-            // Extract values
             if (phrase) {
+                console.log(`   Got phrase: ${phrase.substring(0, 30)}...`);
+
+                // Extract values
                 console.log('   Extracting values...');
                 values = await page.evaluate(() => {
                     const els = document.querySelectorAll('*');
