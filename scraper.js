@@ -68,9 +68,14 @@ async function getGematriaPhrase(options = {}) {
 
         console.log("   Page loaded");
 
+        // Wait for page to be fully interactive
+        await page.waitForTimeout(3000);
+
         // Check Aik Bekar checkbox for 4-value matching
         try {
-            await page.locator('input[type="checkbox"]').check({ timeout: 5000 });
+            const checkbox = page.locator('input[type="checkbox"]');
+            await checkbox.waitFor({ state: 'visible', timeout: 10000 });
+            await checkbox.check({ timeout: 10000 });
             console.log("   Aik Bekar checkbox checked");
         } catch (e) {
             console.log("   Could not check Aik Bekar checkbox:", e.message);
