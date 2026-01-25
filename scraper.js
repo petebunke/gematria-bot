@@ -20,6 +20,7 @@ async function getGematriaPhrase(options = {}) {
 
     console.log("🚀 Starting scraper (headless:", headless, ")");
 
+    console.log("   Launching browser...");
     const browser = await chromium.launch({
         headless,
         args: [
@@ -27,10 +28,11 @@ async function getGematriaPhrase(options = {}) {
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process'
-        ]
+            '--disable-software-rasterizer'
+        ],
+        timeout: 60000
     });
+    console.log("   Browser launched");
 
     try {
         const context = await browser.newContext({
