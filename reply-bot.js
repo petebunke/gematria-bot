@@ -217,17 +217,23 @@ async function generateGematria() {
             }
             console.log('   Clicked, waiting for result...');
 
-            // Wait for generation (max 20s) using evaluate
+            // Wait for generation (max 20s) with timeout protection
             for (let i = 0; i < 20; i++) {
                 console.log(`   Waiting... ${i+1}/20`);
                 await page.waitForTimeout(1000);
-                const stillGenerating = await page.evaluate(() => {
-                    const btns = document.querySelectorAll('button');
-                    for (const btn of btns) {
-                        if (btn.textContent?.includes('Generating')) return true;
-                    }
-                    return false;
-                }).catch(() => false);
+
+                // Use Promise.race to prevent evaluate from hanging
+                const stillGenerating = await Promise.race([
+                    page.evaluate(() => {
+                        const btns = document.querySelectorAll('button');
+                        for (const btn of btns) {
+                            if (btn.textContent?.includes('Generating')) return true;
+                        }
+                        return false;
+                    }),
+                    new Promise(resolve => setTimeout(() => resolve(false), 5000))
+                ]).catch(() => false);
+
                 console.log(`   Still generating: ${stillGenerating}`);
                 if (!stillGenerating) {
                     console.log(`   Generation done after ${i+1}s`);
@@ -237,31 +243,37 @@ async function generateGematria() {
 
             await page.waitForTimeout(1000);
 
-            // Extract phrase using evaluate (faster than locators)
+            // Extract phrase using evaluate with timeout protection
             console.log('   Extracting phrase...');
-            phrase = await page.evaluate(() => {
-                const inputs = document.querySelectorAll('input[type="text"]');
-                for (const input of inputs) {
-                    if (input.value && input.value.length > 5) {
-                        return input.value;
+            phrase = await Promise.race([
+                page.evaluate(() => {
+                    const inputs = document.querySelectorAll('input[type="text"]');
+                    for (const input of inputs) {
+                        if (input.value && input.value.length > 5) {
+                            return input.value;
+                        }
                     }
-                }
-                return '';
-            }) || '';
+                    return '';
+                }),
+                new Promise(resolve => setTimeout(() => resolve(''), 10000))
+            ]).catch(() => '') || '';
 
             if (phrase) {
                 console.log(`   Got phrase: ${phrase.substring(0, 30)}...`);
 
-                // Extract values
+                // Extract values with timeout protection
                 console.log('   Extracting values...');
-                values = await page.evaluate(() => {
-                    const els = document.querySelectorAll('*');
-                    for (const el of els) {
-                        const text = el.textContent?.trim() || '';
-                        if (/^\d+\/\d+\/\d+\/\d+$/.test(text)) return text;
-                    }
-                    return '';
-                }) || '';
+                values = await Promise.race([
+                    page.evaluate(() => {
+                        const els = document.querySelectorAll('*');
+                        for (const el of els) {
+                            const text = el.textContent?.trim() || '';
+                            if (/^\d+\/\d+\/\d+\/\d+$/.test(text)) return text;
+                        }
+                        return '';
+                    }),
+                    new Promise(resolve => setTimeout(() => resolve(''), 10000))
+                ]).catch(() => '') || '';
                 console.log(`   Got values: ${values}`);
             } else {
                 console.log('   No phrase found this attempt');
