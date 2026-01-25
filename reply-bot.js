@@ -49,68 +49,72 @@ client.on('messageCreate', async (message) => {
     console.log(`📩 Triggered by ${message.author.tag} in #${message.channel.name}`);
 
     try {
-        // Show typing indicator
+        // Show typing indicator and send processing message
         await message.channel.sendTyping();
+
+        // Keep typing indicator active during long operation
+        const typingInterval = setInterval(() => {
+            message.channel.sendTyping().catch(() => {});
+        }, 5000);
 
         // Get gematria phrase with GIF
         console.log('   Fetching gematria phrase...');
         let data;
         try {
             data = await getGematriaPhrase({ headless: true, createGif: true });
+            clearInterval(typingInterval);
         } catch (err) {
+            clearInterval(typingInterval);
             console.log('   ⚠️ Scraper error:', err.message);
             console.log('   Full error:', err.stack);
             // Fallback to simple message
-            await message.reply(`Sorry, I had trouble generating a phrase: ${err.message}`);
+            await message.reply(`Sorry, I had trouble generating a phrase. Please try again!`);
             return;
         }
 
         console.log('   Got:', data.phrase);
 
-        // Build the message content with bold phrase
-        const messageContent = `**${data.phrase}**\n${data.values}`;
-
-        // Build embeds for each word definition
-        const embeds = [];
-
-        // Add gematria values embed
-        const valuesEmbed = new EmbedBuilder()
-            .setTitle('Gematria Values')
-            .setColor(0xDC2626);
-
-        if (data.hebrewValue || data.englishValue || data.simpleValue || data.aikBekarValue) {
-            valuesEmbed.addFields(
-                { name: 'Hebrew', value: data.hebrewValue || '-', inline: true },
-                { name: 'English', value: data.englishValue || '-', inline: true },
-                { name: 'Simple', value: data.simpleValue || '-', inline: true },
-                { name: 'Aik Bekar⁹', value: data.aikBekarValue || '-', inline: true }
-            );
-            embeds.push(valuesEmbed);
+        // Build the message content with bold phrase and values
+        let messageContent = `**${data.phrase}**`;
+        if (data.values) {
+            messageContent += `\n${data.values}`;
         }
 
-        // Add word definitions
-        for (const wordData of data.words || []) {
-            const embed = new EmbedBuilder()
-                .setTitle(wordData.word)
-                .setDescription(`*${wordData.partOfSpeech}*\n${wordData.definition}`);
-            embeds.push(embed);
+        // Build embeds
+        const embeds = [];
+
+        // Add gematria values embed with inline fields
+        if (data.hebrewValue || data.englishValue || data.simpleValue || data.aikBekarValue) {
+            const valuesEmbed = new EmbedBuilder()
+                .setTitle('Gematria Values')
+                .setColor(0xDC2626)
+                .addFields(
+                    { name: 'Hebrew', value: data.hebrewValue || '-', inline: true },
+                    { name: 'English', value: data.englishValue || '-', inline: true },
+                    { name: 'Simple', value: data.simpleValue || '-', inline: true },
+                    { name: 'Aik Bekar⁹', value: data.aikBekarValue || '-', inline: true }
+                );
+            embeds.push(valuesEmbed);
         }
 
         // Prepare reply options
         const replyOptions = {
             content: messageContent,
-            embeds: embeds.slice(0, 9) // Leave room for GIF embed
+            embeds: embeds
         };
 
         // Add GIF if available
         if (data.gifPath && fs.existsSync(data.gifPath)) {
+            console.log('   Attaching GIF:', data.gifPath);
             const attachment = new AttachmentBuilder(data.gifPath, { name: 'pattern.gif' });
             replyOptions.files = [attachment];
 
-            // Add final embed with the GIF
+            // Add embed with the GIF image
             const gifEmbed = new EmbedBuilder()
                 .setImage('attachment://pattern.gif');
             replyOptions.embeds.push(gifEmbed);
+        } else {
+            console.log('   No GIF available');
         }
 
         // Send the response

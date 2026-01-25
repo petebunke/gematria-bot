@@ -16,6 +16,7 @@ const path = require("path");
 async function getGematriaPhrase(options = {}) {
     const headless = options.headless !== false;
     const createGif = options.createGif !== false;
+    const timeout = options.timeout || 90000; // 90 second overall timeout
 
     console.log("🚀 Starting scraper (headless:", headless, ")");
 
@@ -25,21 +26,52 @@ async function getGematriaPhrase(options = {}) {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process'
         ]
     });
 
     try {
-        const page = await browser.newPage({
+        const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             viewport: { width: 1920, height: 1080 }
         });
 
-        await page.goto("https://gematriagenerator.app");
-        await page.waitForSelector('button:has-text("Loading")', { state: "hidden", timeout: 60000 });
+        // Set default timeout for all operations
+        context.setDefaultTimeout(30000);
+
+        const page = await context.newPage();
+
+        console.log("   Navigating to gematriagenerator.app...");
+        await page.goto("https://gematriagenerator.app", {
+            waitUntil: 'networkidle',
+            timeout: 30000
+        });
+
+        // Wait for page to be interactive
+        await page.waitForTimeout(2000);
+
+        // Check if Loading button exists, wait for it to hide
+        try {
+            const loadingBtn = page.locator('button:has-text("Loading")');
+            if (await loadingBtn.isVisible({ timeout: 2000 })) {
+                console.log("   Waiting for Loading to finish...");
+                await loadingBtn.waitFor({ state: "hidden", timeout: 30000 });
+            }
+        } catch (e) {
+            console.log("   No Loading button found, continuing...");
+        }
+
         console.log("   Page loaded");
 
-        await page.locator('input[type="checkbox"]').check();
+        // Check Aik Bekar checkbox
+        try {
+            await page.locator('input[type="checkbox"]').check({ timeout: 5000 });
+            console.log("   Aik Bekar checkbox checked");
+        } catch (e) {
+            console.log("   Could not check Aik Bekar checkbox:", e.message);
+        }
 
         let phrase = "";
         let values = "";
@@ -48,15 +80,16 @@ async function getGematriaPhrase(options = {}) {
         let simpleValue = "";
         let aikBekarValue = "";
         let attempts = 0;
+        const maxAttempts = 5; // Reduced from 20
 
-        while (!phrase && attempts < 20) {
+        while (!phrase && attempts < maxAttempts) {
             attempts++;
-            console.log("   Attempt", attempts);
+            console.log("   Attempt", attempts, "of", maxAttempts);
 
             // Close error modal if present
             try {
                 const closeBtn = page.locator('button:has-text("Close")').first();
-                if (await closeBtn.isVisible({ timeout: 500 })) {
+                if (await closeBtn.isVisible({ timeout: 1000 })) {
                     console.log("   Closing error modal...");
                     await closeBtn.click();
                     await page.waitForTimeout(500);
@@ -67,20 +100,28 @@ async function getGematriaPhrase(options = {}) {
             // Clear if needed
             try {
                 const clearBtn = page.locator('button:has-text("Clear")');
-                if (await clearBtn.isVisible({ timeout: 500 })) {
+                if (await clearBtn.isVisible({ timeout: 1000 })) {
                     await clearBtn.click();
                     await page.waitForTimeout(500);
                 }
             } catch (e) {}
 
-            await page.click('button:has-text("Generate Random Phrase")');
+            // Click generate button
+            console.log("   Clicking Generate Random Phrase...");
+            try {
+                await page.click('button:has-text("Generate Random Phrase")', { timeout: 5000 });
+            } catch (e) {
+                console.log("   Could not click generate button:", e.message);
+                continue;
+            }
 
-            // Wait for completion
-            for (let i = 0; i < 60; i++) {
+            // Wait for completion (max 30 seconds per attempt)
+            console.log("   Waiting for generation...");
+            for (let i = 0; i < 30; i++) {
                 await page.waitForTimeout(1000);
                 const hasError = await page.locator('button:has-text("Close")').isVisible().catch(() => false);
                 if (hasError) {
-                    console.log("   Error detected");
+                    console.log("   Error modal detected, will retry");
                     break;
                 }
                 const stillGenerating = await page.locator('button:has-text("Generating")').isVisible().catch(() => false);
@@ -88,9 +129,12 @@ async function getGematriaPhrase(options = {}) {
                     console.log("   Generation finished");
                     break;
                 }
+                if (i % 10 === 9) {
+                    console.log("   Still generating... (" + (i+1) + "s)");
+                }
             }
 
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(1000);
 
             // Find the phrase input
             const allInputs = await page.locator("input").all();
@@ -155,7 +199,7 @@ async function getGematriaPhrase(options = {}) {
         console.log("\n   Exited loop. Phrase:", phrase ? "YES" : "NO");
 
         if (!phrase) {
-            throw new Error("Could not generate phrase after 20 attempts");
+            throw new Error(`Could not generate phrase after ${maxAttempts} attempts`);
         }
 
         console.log("✅ Phrase:", phrase);
