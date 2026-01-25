@@ -103,6 +103,10 @@ async function runScheduler(options = {}) {
         gematriaData = {
             phrase: 'test phrase',
             values: '111/222/33/44',
+            hebrewValue: '111',
+            englishValue: '222',
+            simpleValue: '33',
+            aikBekarValue: '44',
             words: [
                 { word: 'Test', partOfSpeech: 'noun', definition: 'A procedure for testing.' },
                 { word: 'Phrase', partOfSpeech: 'noun', definition: 'A group of words.' }
@@ -155,6 +159,10 @@ async function postToChannel(channel) {
         gematriaData = {
             phrase: 'test phrase',
             values: '111/222/33/44',
+            hebrewValue: '111',
+            englishValue: '222',
+            simpleValue: '33',
+            aikBekarValue: '44',
             words: [
                 { word: 'Test', partOfSpeech: 'noun', definition: 'A procedure for testing.' },
                 { word: 'Phrase', partOfSpeech: 'noun', definition: 'A group of words.' }

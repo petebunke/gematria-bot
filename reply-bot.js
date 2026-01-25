@@ -56,7 +56,7 @@ client.on('messageCreate', async (message) => {
         console.log('   Fetching gematria phrase...');
         let data;
         try {
-            data = await getGematriaPhrase({ headless: true, createGif: false });
+            data = await getGematriaPhrase({ headless: true, createGif: true });
         } catch (err) {
             console.log('   ⚠️ Scraper error:', err.message);
             console.log('   Full error:', err.stack);
@@ -67,11 +67,28 @@ client.on('messageCreate', async (message) => {
 
         console.log('   Got:', data.phrase);
 
-        // Build the message content
-        const messageContent = `${data.phrase} (${data.values})`;
+        // Build the message content with bold phrase
+        const messageContent = `**${data.phrase}**\n${data.values}`;
 
-        // Build embeds for each word
+        // Build embeds for each word definition
         const embeds = [];
+
+        // Add gematria values embed
+        const valuesEmbed = new EmbedBuilder()
+            .setTitle('Gematria Values')
+            .setColor(0xDC2626);
+
+        if (data.hebrewValue || data.englishValue || data.simpleValue || data.aikBekarValue) {
+            valuesEmbed.addFields(
+                { name: 'Hebrew', value: data.hebrewValue || '-', inline: true },
+                { name: 'English', value: data.englishValue || '-', inline: true },
+                { name: 'Simple', value: data.simpleValue || '-', inline: true },
+                { name: 'Aik Bekar⁹', value: data.aikBekarValue || '-', inline: true }
+            );
+            embeds.push(valuesEmbed);
+        }
+
+        // Add word definitions
         for (const wordData of data.words || []) {
             const embed = new EmbedBuilder()
                 .setTitle(wordData.word)

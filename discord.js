@@ -53,7 +53,7 @@ const CHANNELS = {
 /**
  * Post gematria result to Discord with GIF attachment
  * @param {string} channel - Channel name
- * @param {object} data - Gematria data { phrase, values, words, gifPath }
+ * @param {object} data - Gematria data { phrase, values, hebrewValue, englishValue, simpleValue, aikBekarValue, words, gifPath }
  */
 async function postGematria(channel, data) {
     const config = CHANNELS[channel];
@@ -69,14 +69,33 @@ async function postGematria(channel, data) {
     }
 
     try {
-        // Build embeds for each word
+        // Build embeds
         const embeds = [];
+
+        // Add gematria values embed if we have individual values
+        if (data.hebrewValue || data.englishValue || data.simpleValue || data.aikBekarValue) {
+            embeds.push({
+                title: 'Gematria Values',
+                color: 0xDC2626, // Red color
+                fields: [
+                    { name: 'Hebrew', value: data.hebrewValue || '-', inline: true },
+                    { name: 'English', value: data.englishValue || '-', inline: true },
+                    { name: 'Simple', value: data.simpleValue || '-', inline: true },
+                    { name: 'Aik Bekar⁹', value: data.aikBekarValue || '-', inline: true }
+                ]
+            });
+        }
+
+        // Build embeds for each word definition
         for (const wordData of data.words || []) {
             embeds.push({
                 title: wordData.word,
                 description: `*${wordData.partOfSpeech}*\n${wordData.definition}`
             });
         }
+
+        // Build content with bold phrase
+        const content = `**${data.phrase}**\n${data.values}`;
 
         // If we have a GIF, upload it with multipart form data
         if (data.gifPath && fs.existsSync(data.gifPath)) {
@@ -86,7 +105,7 @@ async function postGematria(channel, data) {
             });
 
             const payload = {
-                content: `${data.phrase} (${data.values})`,
+                content: content,
                 username: config.botName,
                 embeds: embeds.slice(0, 10)
             };
@@ -112,7 +131,7 @@ async function postGematria(channel, data) {
         } else {
             // No GIF, just send JSON
             const payload = {
-                content: `${data.phrase} (${data.values})`,
+                content: content,
                 username: config.botName,
                 embeds: embeds.slice(0, 10)
             };
@@ -207,6 +226,10 @@ if (require.main === module) {
     const testData = {
         phrase: 'yoga highland',
         values: '555/666/111/99',
+        hebrewValue: '555',
+        englishValue: '666',
+        simpleValue: '111',
+        aikBekarValue: '99',
         words: [
             {
                 word: 'Yoga',

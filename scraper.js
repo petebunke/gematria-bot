@@ -43,6 +43,10 @@ async function getGematriaPhrase(options = {}) {
 
         let phrase = "";
         let values = "";
+        let hebrewValue = "";
+        let englishValue = "";
+        let simpleValue = "";
+        let aikBekarValue = "";
         let attempts = 0;
 
         while (!phrase && attempts < 20) {
@@ -101,7 +105,7 @@ async function getGematriaPhrase(options = {}) {
             }
 
             if (phrase) {
-                // Get the red text values
+                // Get the red text values (combined format like "4444/6666/1111/1111")
                 try {
                     const redText = await page.evaluate(() => {
                         const elements = document.querySelectorAll("*");
@@ -120,6 +124,31 @@ async function getGematriaPhrase(options = {}) {
                 } catch (e) {
                     console.log("   Could not get values:", e.message);
                 }
+
+                // Get individual gematria values from dropdowns
+                try {
+                    const dropdownValues = await page.evaluate(() => {
+                        const selects = document.querySelectorAll('select');
+                        const vals = {};
+                        selects.forEach((select, idx) => {
+                            const val = select.value;
+                            if (idx === 0) vals.hebrew = val;
+                            else if (idx === 1) vals.english = val;
+                            else if (idx === 2) vals.simple = val;
+                            else if (idx === 3) vals.aikBekar = val;
+                        });
+                        return vals;
+                    });
+                    if (dropdownValues.hebrew) {
+                        hebrewValue = dropdownValues.hebrew;
+                        englishValue = dropdownValues.english;
+                        simpleValue = dropdownValues.simple;
+                        aikBekarValue = dropdownValues.aikBekar;
+                        console.log("   Individual values - Hebrew:", hebrewValue, "English:", englishValue, "Simple:", simpleValue, "Aik Bekar:", aikBekarValue);
+                    }
+                } catch (e) {
+                    console.log("   Could not get individual values:", e.message);
+                }
             }
         }
 
@@ -131,16 +160,17 @@ async function getGematriaPhrase(options = {}) {
 
         console.log("✅ Phrase:", phrase);
         console.log("   Values:", values);
+        console.log("   Hebrew:", hebrewValue, "English:", englishValue, "Simple:", simpleValue, "Aik Bekar:", aikBekarValue);
 
         fs.writeFileSync("phrase.txt", phrase);
         fs.writeFileSync("values.txt", values);
 
-        // Parse words for definitions
+        // Parse words for definitions (capitalize first letter)
         const wordList = phrase.split(" ").filter(w => w.length > 0);
         const words = wordList.map(word => ({
             word: word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
             partOfSpeech: "noun",
-            definition: "A word or concept in the gematria phrase."
+            definition: "A word in the gematria phrase."
         }));
 
         let gifPath = null;
@@ -191,6 +221,10 @@ async function getGematriaPhrase(options = {}) {
         return {
             phrase,
             values,
+            hebrewValue,
+            englishValue,
+            simpleValue,
+            aikBekarValue,
             words,
             gifPath
         };
