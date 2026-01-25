@@ -219,6 +219,7 @@ async function generateGematria() {
 
             // Wait for generation (max 20s) using evaluate
             for (let i = 0; i < 20; i++) {
+                console.log(`   Waiting... ${i+1}/20`);
                 await page.waitForTimeout(1000);
                 const stillGenerating = await page.evaluate(() => {
                     const btns = document.querySelectorAll('button');
@@ -227,6 +228,7 @@ async function generateGematria() {
                     }
                     return false;
                 }).catch(() => false);
+                console.log(`   Still generating: ${stillGenerating}`);
                 if (!stillGenerating) {
                     console.log(`   Generation done after ${i+1}s`);
                     break;
