@@ -262,17 +262,25 @@ async function getGematriaPhrase(options = {}) {
             }
             fs.mkdirSync(framesDir);
 
-            // Find the big SVG
+            // Find the big pattern SVG (skip small icon SVGs)
             let targetSvg = null;
+            console.log("   Looking for pattern SVG...");
             const svgs = await page.locator("svg").all();
+            console.log("   Found", svgs.length, "SVG elements");
 
-            for (const svg of svgs) {
-                const box = await svg.boundingBox();
-                if (box && box.width > 200 && box.height > 100) {
-                    targetSvg = svg;
-                    await svg.scrollIntoViewIfNeeded();
-                    console.log("   Found SVG:", box.width, "x", box.height);
-                    break;
+            for (let idx = 0; idx < svgs.length; idx++) {
+                const svg = svgs[idx];
+                try {
+                    const box = await svg.boundingBox({ timeout: 2000 });
+                    if (box && box.width > 200 && box.height > 100) {
+                        targetSvg = svg;
+                        await svg.scrollIntoViewIfNeeded();
+                        console.log("   Found pattern SVG at index", idx, ":", box.width, "x", box.height);
+                        break;
+                    }
+                } catch (e) {
+                    // Skip SVGs that timeout (probably hidden or problematic)
+                    continue;
                 }
             }
 
