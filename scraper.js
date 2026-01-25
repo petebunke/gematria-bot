@@ -10,13 +10,26 @@ const fs = require("fs");
 const path = require("path");
 
 /**
+ * Wrapper with hard timeout
+ */
+async function getGematriaPhrase(options = {}) {
+    const hardTimeout = options.timeout || 120000; // 2 minute hard timeout
+
+    return Promise.race([
+        getGematriaPhraseInternal(options),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Hard timeout after ${hardTimeout/1000}s`)), hardTimeout)
+        )
+    ]);
+}
+
+/**
  * Scrape gematria phrase and optionally create GIF
  * Uses exact logic from make-gif.js
  */
-async function getGematriaPhrase(options = {}) {
+async function getGematriaPhraseInternal(options = {}) {
     const headless = options.headless !== false;
     const createGif = options.createGif !== false;
-    const timeout = options.timeout || 90000; // 90 second overall timeout
 
     console.log("🚀 Starting scraper (headless:", headless, ")");
 
@@ -82,7 +95,7 @@ async function getGematriaPhrase(options = {}) {
         let simpleValue = "";
         let aikBekarValue = "";
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 3; // Reduced to fail faster
 
         while (!phrase && attempts < maxAttempts) {
             attempts++;
@@ -126,10 +139,10 @@ async function getGematriaPhrase(options = {}) {
                 continue;
             }
 
-            // Wait for completion (max 180 seconds per attempt - website is slow)
-            console.log("   Waiting for generation (this can take 2-3 minutes)...");
+            // Wait for completion (max 60 seconds per attempt)
+            console.log("   Waiting for generation...");
             let generationStarted = false;
-            for (let i = 0; i < 180; i++) {
+            for (let i = 0; i < 60; i++) {
                 await page.waitForTimeout(1000);
 
                 // Check for error modal
