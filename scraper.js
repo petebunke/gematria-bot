@@ -326,17 +326,32 @@ async function getGematriaPhrase(options = {}) {
             }
 
             if (targetSvg) {
-                console.log("🎬 Capturing 30 frames...");
+                // Get bounding box for page screenshot with clip
+                const box = await targetSvg.boundingBox();
+                console.log("🎬 Capturing 30 frames from region:", Math.round(box.x), Math.round(box.y), Math.round(box.width), "x", Math.round(box.height));
+
+                // Wait for SVG to be fully rendered
+                await page.waitForTimeout(1000);
+
                 let framesCaptured = 0;
                 for (let i = 0; i < 30; i++) {
                     try {
-                        await targetSvg.screenshot({ path: `./frames/frame${String(i).padStart(3, "0")}.png`, timeout: 10000 });
+                        // Use page screenshot with clip - more reliable in headless mode
+                        await page.screenshot({
+                            path: `./frames/frame${String(i).padStart(3, "0")}.png`,
+                            clip: {
+                                x: Math.round(box.x),
+                                y: Math.round(box.y),
+                                width: Math.round(box.width),
+                                height: Math.round(box.height)
+                            }
+                        });
                         framesCaptured++;
                     } catch (e) {
                         console.log("   Screenshot", i, "failed:", e.message.split('\n')[0]);
                         break;
                     }
-                    await page.waitForTimeout(200);
+                    await page.waitForTimeout(100);
                 }
 
                 console.log("   Captured", framesCaptured, "frames");
