@@ -180,31 +180,39 @@ async function generateGematria() {
         for (let attempt = 1; attempt <= 10 && !phrase; attempt++) {
             console.log(`   Attempt ${attempt}/10...`);
 
-            // Close error modals / clear using evaluate (faster)
-            await page.evaluate(() => {
-                const btns = document.querySelectorAll('button');
-                for (const btn of btns) {
-                    if (btn.textContent?.includes('Close') || btn.textContent?.includes('Clear')) {
-                        btn.click();
-                    }
-                }
-            }).catch(() => {});
-            await page.waitForTimeout(300);
+            // Wait a bit for page to settle
+            await page.waitForTimeout(1000);
 
             // Click generate using evaluate (faster)
             console.log('   Clicking Generate...');
             const clicked = await page.evaluate(() => {
                 const btns = document.querySelectorAll('button');
                 for (const btn of btns) {
-                    if (btn.textContent?.includes('Generate Random Phrase')) {
+                    const text = btn.textContent || '';
+                    if (text.includes('Generate Random Phrase') && !btn.disabled) {
                         btn.click();
                         return true;
                     }
                 }
                 return false;
             });
+
             if (!clicked) {
-                console.log('   Generate button not found');
+                // Log all button texts for debugging
+                const btnTexts = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll('button')).map(b => b.textContent?.trim().substring(0, 30));
+                }).catch(() => []);
+                console.log(`   Buttons found: ${JSON.stringify(btnTexts)}`);
+                console.log('   Generate button not found, checking for error modal...');
+
+                // Try to close any modal
+                await page.evaluate(() => {
+                    const btns = document.querySelectorAll('button');
+                    for (const btn of btns) {
+                        if (btn.textContent?.includes('Close')) btn.click();
+                    }
+                }).catch(() => {});
+                await page.waitForTimeout(500);
                 continue;
             }
             console.log('   Clicked, waiting for result...');
