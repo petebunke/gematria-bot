@@ -82,7 +82,7 @@ async function getGematriaPhrase(options = {}) {
         let simpleValue = "";
         let aikBekarValue = "";
         let attempts = 0;
-        const maxAttempts = 5; // Reduced from 20
+        const maxAttempts = 10;
 
         while (!phrase && attempts < maxAttempts) {
             attempts++;
