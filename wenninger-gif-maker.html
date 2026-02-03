@@ -67,8 +67,8 @@
 
     <div class="controls">
         <div class="speed-control">
-            <label>Animation Speed (ms per frame): <span id="speedValue">500</span></label><br>
-            <input type="range" id="speedSlider" min="100" max="2000" value="500" step="50">
+            <label>Animation Speed (ms per frame): <span id="speedValue">1</span></label><br>
+            <input type="range" id="speedSlider" min="1" max="500" value="1" step="1">
         </div>
         <button class="download-btn start-btn" id="startBtn" onclick="startProcess()">
             Start Processing
@@ -230,7 +230,7 @@
     }
     // ========== END GIF ENCODER ==========
 
-    let frameDelay = 500;
+    let frameDelay = 1;
     const allGifs = [];
     let logMessages = [];
 
@@ -509,7 +509,7 @@
             if (small) small.textContent = 'Encoding GIF...';
         }
 
-        // Create GIF
+        // Create GIF with ping-pong animation (forward then backward, no repeated frames)
         const encoder = new GIFEncoder(maxWidth, maxHeight);
         encoder.setDelay(frameDelay);
 
@@ -518,8 +518,19 @@
         canvas.height = maxHeight;
         const ctx = canvas.getContext('2d');
 
+        // Build ping-pong sequence: [0, 1, 2, 3, 4, 3, 2, 1] for 5 images
+        const pingPongSequence = [];
         for (let i = 0; i < images.length; i++) {
-            const img = images[i];
+            pingPongSequence.push(i);
+        }
+        // Add reverse sequence excluding first and last to avoid duplicates
+        for (let i = images.length - 2; i > 0; i--) {
+            pingPongSequence.push(i);
+        }
+
+        const totalFrames = pingPongSequence.length;
+        for (let f = 0; f < totalFrames; f++) {
+            const img = images[pingPongSequence[f]];
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, maxWidth, maxHeight);
 
@@ -532,7 +543,7 @@
             ctx.drawImage(img, x, y, w, h);
             encoder.addFrame(canvas);
 
-            if (progressEl) progressEl.style.width = `${50 + ((i + 1) / images.length) * 50}%`;
+            if (progressEl) progressEl.style.width = `${50 + ((f + 1) / totalFrames) * 50}%`;
         }
 
         const blob = encoder.finish();
