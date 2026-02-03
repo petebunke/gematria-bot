@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wenninger Polyhedron Animated GIF Maker</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             max-width: 1400px;
@@ -17,156 +14,51 @@
             background: #1a1a2e;
             color: #eee;
         }
-        h1 {
-            text-align: center;
-            color: #00d4ff;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #888;
-            margin-bottom: 30px;
-        }
+        h1 { text-align: center; color: #00d4ff; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
         .status {
             background: #16213e;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
             border-left: 4px solid #00d4ff;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
         }
-        .status.error {
-            border-left-color: #ff4757;
-        }
-        .status.success {
-            border-left-color: #2ed573;
-        }
-        .tables-container {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-        .table-section {
-            background: #16213e;
-            padding: 20px;
-            border-radius: 12px;
-        }
-        .table-section h2 {
-            color: #00d4ff;
-            margin-top: 0;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-        .columns-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        .column-card {
-            background: #0f0f23;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .column-card h3 {
-            color: #ffd700;
-            margin-top: 0;
-            font-size: 14px;
-        }
-        .gif-preview {
-            width: 100%;
-            max-width: 200px;
-            height: auto;
-            border: 2px solid #333;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
-        .placeholder {
-            width: 200px;
-            height: 200px;
-            background: #222;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 10px auto;
-            border-radius: 4px;
-            color: #666;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #333;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00d4ff, #0066ff);
-            transition: width 0.3s;
-        }
+        .status.error { border-left-color: #ff4757; }
+        .status.success { border-left-color: #2ed573; }
+        .tables-container { display: flex; flex-direction: column; gap: 30px; }
+        .table-section { background: #16213e; padding: 20px; border-radius: 12px; }
+        .table-section h2 { color: #00d4ff; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .columns-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .column-card { background: #0f0f23; padding: 15px; border-radius: 8px; text-align: center; }
+        .column-card h3 { color: #ffd700; margin-top: 0; font-size: 14px; }
+        .gif-preview { width: 100%; max-width: 200px; height: auto; border: 2px solid #333; border-radius: 4px; margin: 10px 0; }
+        .placeholder { width: 200px; height: 200px; background: #222; display: flex; align-items: center; justify-content: center; margin: 10px auto; border-radius: 4px; color: #666; flex-direction: column; }
+        .progress-bar { width: 100%; height: 20px; background: #333; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #00d4ff, #0066ff); transition: width 0.3s; }
         .download-btn {
             background: linear-gradient(135deg, #00d4ff, #0066ff);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
+            color: white; border: none; padding: 10px 20px; border-radius: 6px;
+            cursor: pointer; font-weight: bold; transition: transform 0.2s, box-shadow 0.2s;
         }
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
-        }
-        .download-btn:disabled {
-            background: #444;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .image-count {
-            color: #888;
-            font-size: 12px;
-            margin-bottom: 10px;
-        }
+        .download-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4); }
+        .download-btn:disabled { background: #444; cursor: not-allowed; transform: none; box-shadow: none; }
+        .image-count { color: #888; font-size: 12px; margin-bottom: 10px; }
         .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #333;
-            border-top-color: #00d4ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+            width: 40px; height: 40px; border: 4px solid #333; border-top-color: #00d4ff;
+            border-radius: 50%; animation: spin 1s linear infinite; margin: 10px auto;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .start-btn {
-            display: block;
-            margin: 20px auto;
-            padding: 15px 40px;
-            font-size: 18px;
-            background: linear-gradient(135deg, #2ed573, #17a558);
-        }
-        .controls {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .speed-control {
-            margin: 15px 0;
-        }
-        .speed-control label {
-            color: #888;
-        }
-        .speed-control input {
-            width: 200px;
-        }
-        .download-all-btn {
-            background: linear-gradient(135deg, #ffd700, #ff8c00);
-            margin-top: 20px;
-            padding: 12px 30px;
-            font-size: 16px;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .start-btn { display: block; margin: 20px auto; padding: 15px 40px; font-size: 18px; background: linear-gradient(135deg, #2ed573, #17a558); }
+        .controls { text-align: center; margin-bottom: 20px; }
+        .speed-control { margin: 15px 0; }
+        .speed-control label { color: #888; }
+        .speed-control input { width: 200px; }
+        .download-all-btn { background: linear-gradient(135deg, #ffd700, #ff8c00); margin-top: 20px; padding: 12px 30px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -183,358 +75,508 @@
         </button>
     </div>
 
-    <div id="status" class="status">
-        Click "Start Processing" to fetch the Wikipedia page and generate animated GIFs from table columns containing images.
-    </div>
+    <div id="status" class="status">Click "Start Processing" to fetch the Wikipedia page and generate animated GIFs.</div>
 
     <div id="tablesContainer" class="tables-container"></div>
 
     <script>
-        // GIF.js worker script loaded from CDN
-        const GIF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
-
-        let frameDelay = 500;
-        const allGifs = [];
-
-        document.getElementById('speedSlider').addEventListener('input', (e) => {
-            frameDelay = parseInt(e.target.value);
-            document.getElementById('speedValue').textContent = frameDelay;
-        });
-
-        function setStatus(message, type = '') {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = message;
-            statusEl.className = 'status ' + type;
+    // ========== INLINE GIF ENCODER (no external dependencies) ==========
+    // Based on jsgif library - simplified for our use case
+    class GIFEncoder {
+        constructor(width, height) {
+            this.width = width;
+            this.height = height;
+            this.frames = [];
+            this.delay = 100;
         }
 
-        async function startProcess() {
-            const startBtn = document.getElementById('startBtn');
-            startBtn.disabled = true;
-            startBtn.textContent = 'Processing...';
+        setDelay(ms) { this.delay = ms; }
 
-            setStatus('Fetching Wikipedia page via CORS proxy...');
+        addFrame(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, this.width, this.height);
+            this.frames.push({
+                data: imageData.data,
+                delay: this.delay
+            });
+        }
 
-            try {
-                // Try multiple CORS proxies
-                const proxies = [
-                    'https://api.allorigins.win/raw?url=',
-                    'https://corsproxy.io/?',
-                    'https://api.codetabs.com/v1/proxy?quest='
-                ];
+        finish() {
+            const stream = [];
 
-                const targetUrl = 'https://en.wikipedia.org/wiki/List_of_Wenninger_polyhedron_models';
-                let html = null;
+            // GIF Header
+            stream.push(0x47, 0x49, 0x46, 0x38, 0x39, 0x61); // GIF89a
 
-                for (const proxy of proxies) {
-                    try {
-                        setStatus(`Trying proxy: ${proxy.split('/')[2]}...`);
-                        const response = await fetch(proxy + encodeURIComponent(targetUrl));
-                        if (response.ok) {
-                            html = await response.text();
-                            break;
-                        }
-                    } catch (e) {
-                        console.log('Proxy failed:', proxy, e);
+            // Logical Screen Descriptor
+            stream.push(this.width & 0xFF, (this.width >> 8) & 0xFF);
+            stream.push(this.height & 0xFF, (this.height >> 8) & 0xFF);
+            stream.push(0xF7, 0x00, 0x00); // Global color table flag, 256 colors
+
+            // Global Color Table (256 colors)
+            for (let i = 0; i < 256; i++) {
+                stream.push(i, i, i); // Grayscale palette
+            }
+
+            // Netscape extension for looping
+            stream.push(0x21, 0xFF, 0x0B);
+            stream.push(0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30);
+            stream.push(0x03, 0x01, 0x00, 0x00, 0x00);
+
+            for (const frame of this.frames) {
+                // Graphic Control Extension
+                const delayCs = Math.round(frame.delay / 10);
+                stream.push(0x21, 0xF9, 0x04, 0x04);
+                stream.push(delayCs & 0xFF, (delayCs >> 8) & 0xFF);
+                stream.push(0x00, 0x00);
+
+                // Image Descriptor
+                stream.push(0x2C);
+                stream.push(0x00, 0x00, 0x00, 0x00); // Left, Top
+                stream.push(this.width & 0xFF, (this.width >> 8) & 0xFF);
+                stream.push(this.height & 0xFF, (this.height >> 8) & 0xFF);
+                stream.push(0x00); // No local color table
+
+                // Image Data - LZW encode
+                const pixels = this.quantizeFrame(frame.data);
+                const encoded = this.lzwEncode(pixels);
+                stream.push(...encoded);
+            }
+
+            // GIF Trailer
+            stream.push(0x3B);
+
+            return new Blob([new Uint8Array(stream)], { type: 'image/gif' });
+        }
+
+        quantizeFrame(data) {
+            const pixels = [];
+            for (let i = 0; i < data.length; i += 4) {
+                // Convert to grayscale
+                const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                pixels.push(gray);
+            }
+            return pixels;
+        }
+
+        lzwEncode(pixels) {
+            const minCodeSize = 8;
+            const clearCode = 256;
+            const eoiCode = 257;
+
+            const output = [minCodeSize];
+            let codeSize = minCodeSize + 1;
+            let nextCode = 258;
+            const codeTable = new Map();
+
+            // Initialize code table
+            for (let i = 0; i < 256; i++) {
+                codeTable.set(String(i), i);
+            }
+
+            let buffer = 0;
+            let bufferSize = 0;
+            const subBlocks = [];
+            let currentSubBlock = [];
+
+            const writeCode = (code) => {
+                buffer |= (code << bufferSize);
+                bufferSize += codeSize;
+                while (bufferSize >= 8) {
+                    currentSubBlock.push(buffer & 0xFF);
+                    buffer >>= 8;
+                    bufferSize -= 8;
+                    if (currentSubBlock.length === 255) {
+                        subBlocks.push(currentSubBlock.length, ...currentSubBlock);
+                        currentSubBlock = [];
                     }
                 }
+            };
 
-                if (!html) {
-                    throw new Error('All proxies failed. Please try again later.');
-                }
+            writeCode(clearCode);
 
-                setStatus('Parsing page content...');
+            let indexBuffer = String(pixels[0]);
+            for (let i = 1; i < pixels.length; i++) {
+                const k = String(pixels[i]);
+                const indexBufferPlusK = indexBuffer + ',' + k;
 
-                // Parse HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-
-                // Find all tables with images
-                const tables = doc.querySelectorAll('table.wikitable');
-                setStatus(`Found ${tables.length} tables. Analyzing for image columns...`);
-
-                const tablesContainer = document.getElementById('tablesContainer');
-                tablesContainer.innerHTML = '';
-
-                let tableIndex = 0;
-                for (const table of tables) {
-                    const imageColumns = findImageColumns(table);
-
-                    if (Object.keys(imageColumns).length > 0) {
-                        tableIndex++;
-                        await processTable(table, imageColumns, tableIndex);
-                    }
-                }
-
-                if (tableIndex === 0) {
-                    setStatus('No tables with image columns found.', 'error');
+                if (codeTable.has(indexBufferPlusK)) {
+                    indexBuffer = indexBufferPlusK;
                 } else {
-                    setStatus(`Completed! Created GIFs from ${tableIndex} tables. Click individual download buttons or download all.`, 'success');
-
-                    // Add download all button
-                    if (allGifs.length > 1) {
-                        const downloadAllBtn = document.createElement('button');
-                        downloadAllBtn.className = 'download-btn download-all-btn';
-                        downloadAllBtn.textContent = `Download All ${allGifs.length} GIFs`;
-                        downloadAllBtn.onclick = downloadAllGifs;
-                        tablesContainer.appendChild(downloadAllBtn);
+                    writeCode(codeTable.get(indexBuffer));
+                    if (nextCode < 4096) {
+                        codeTable.set(indexBufferPlusK, nextCode++);
+                        if (nextCode > (1 << codeSize) && codeSize < 12) {
+                            codeSize++;
+                        }
                     }
+                    indexBuffer = k;
                 }
-
-            } catch (error) {
-                setStatus('Error: ' + error.message, 'error');
-                console.error(error);
             }
 
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start Processing';
+            writeCode(codeTable.get(indexBuffer));
+            writeCode(eoiCode);
+
+            if (bufferSize > 0) {
+                currentSubBlock.push(buffer & 0xFF);
+            }
+            if (currentSubBlock.length > 0) {
+                subBlocks.push(currentSubBlock.length, ...currentSubBlock);
+            }
+            subBlocks.push(0); // Block terminator
+
+            output.push(...subBlocks);
+            return output;
+        }
+    }
+    // ========== END GIF ENCODER ==========
+
+    let frameDelay = 500;
+    const allGifs = [];
+    let logMessages = [];
+
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+        frameDelay = parseInt(e.target.value);
+        document.getElementById('speedValue').textContent = frameDelay;
+    });
+
+    function log(message) {
+        logMessages.push(message);
+        if (logMessages.length > 20) logMessages.shift();
+        document.getElementById('status').textContent = logMessages.join('\n');
+        document.getElementById('status').scrollTop = document.getElementById('status').scrollHeight;
+        console.log(message);
+    }
+
+    function setStatus(message, type = '') {
+        logMessages = [message];
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = message;
+        statusEl.className = 'status ' + type;
+    }
+
+    async function startProcess() {
+        const startBtn = document.getElementById('startBtn');
+        startBtn.disabled = true;
+        startBtn.textContent = 'Processing...';
+        allGifs.length = 0;
+        logMessages = [];
+
+        log('Starting process...');
+
+        try {
+            // Try multiple CORS proxies
+            const proxies = [
+                { name: 'corsproxy.io', url: 'https://corsproxy.io/?' },
+                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' },
+                { name: 'cors-anywhere', url: 'https://cors-anywhere.herokuapp.com/' }
+            ];
+
+            const targetUrl = 'https://en.wikipedia.org/wiki/List_of_Wenninger_polyhedron_models';
+            let html = null;
+
+            for (const proxy of proxies) {
+                try {
+                    log(`Trying ${proxy.name}...`);
+                    const fullUrl = proxy.url + encodeURIComponent(targetUrl);
+                    const response = await fetch(fullUrl, {
+                        headers: { 'Accept': 'text/html' }
+                    });
+                    if (response.ok) {
+                        html = await response.text();
+                        log(`Success with ${proxy.name}!`);
+                        break;
+                    } else {
+                        log(`${proxy.name} returned ${response.status}`);
+                    }
+                } catch (e) {
+                    log(`${proxy.name} failed: ${e.message}`);
+                }
+            }
+
+            if (!html) {
+                throw new Error('All CORS proxies failed. Check browser console for details.');
+            }
+
+            log('Parsing HTML...');
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const tables = doc.querySelectorAll('table.wikitable');
+            log(`Found ${tables.length} wikitables`);
+
+            const tablesContainer = document.getElementById('tablesContainer');
+            tablesContainer.innerHTML = '';
+
+            let tableIndex = 0;
+            for (const table of tables) {
+                const imageColumns = findImageColumns(table);
+                const colCount = Object.keys(imageColumns).length;
+
+                if (colCount > 0) {
+                    tableIndex++;
+                    log(`Table ${tableIndex}: ${colCount} image columns found`);
+                    await processTable(table, imageColumns, tableIndex);
+                }
+            }
+
+            if (tableIndex === 0) {
+                setStatus('No tables with image columns found.', 'error');
+            } else {
+                log(`\nCompleted! Created ${allGifs.length} GIFs.`);
+                document.getElementById('status').className = 'status success';
+
+                if (allGifs.length > 1) {
+                    const downloadAllBtn = document.createElement('button');
+                    downloadAllBtn.className = 'download-btn download-all-btn';
+                    downloadAllBtn.textContent = `Download All ${allGifs.length} GIFs`;
+                    downloadAllBtn.onclick = downloadAllGifs;
+                    tablesContainer.appendChild(downloadAllBtn);
+                }
+            }
+
+        } catch (error) {
+            log(`ERROR: ${error.message}`);
+            document.getElementById('status').className = 'status error';
+            console.error(error);
         }
 
-        function findImageColumns(table) {
-            const rows = table.querySelectorAll('tr');
-            const imageColumns = {};
+        startBtn.disabled = false;
+        startBtn.textContent = 'Start Processing';
+    }
 
-            // Find header row to get column names
-            const headerRow = rows[0];
-            const headers = [];
-            if (headerRow) {
-                headerRow.querySelectorAll('th, td').forEach((cell, idx) => {
-                    headers[idx] = cell.textContent.trim() || `Column ${idx + 1}`;
-                });
-            }
+    function findImageColumns(table) {
+        const rows = table.querySelectorAll('tr');
+        const imageColumns = {};
+        const headers = [];
 
-            // Scan all rows for images
-            for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-                const cells = rows[rowIdx].querySelectorAll('td, th');
-                let colIdx = 0;
+        // Get headers
+        const headerRow = rows[0];
+        if (headerRow) {
+            headerRow.querySelectorAll('th, td').forEach((cell, idx) => {
+                headers[idx] = cell.textContent.trim().substring(0, 30) || `Column ${idx + 1}`;
+            });
+        }
 
-                cells.forEach((cell) => {
-                    const imgs = cell.querySelectorAll('img');
-                    imgs.forEach(img => {
-                        let src = img.getAttribute('src') || '';
+        // Scan rows for images
+        for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+            const cells = rows[rowIdx].querySelectorAll('td, th');
+            let colIdx = 0;
 
-                        // Convert to full URL and get higher resolution
-                        if (src.startsWith('//')) {
-                            src = 'https:' + src;
-                        } else if (src.startsWith('/')) {
-                            src = 'https://en.wikipedia.org' + src;
+            cells.forEach((cell) => {
+                const imgs = cell.querySelectorAll('img');
+                imgs.forEach(img => {
+                    let src = img.getAttribute('src') || '';
+
+                    if (src.startsWith('//')) src = 'https:' + src;
+                    else if (src.startsWith('/')) src = 'https://en.wikipedia.org' + src;
+
+                    // Get larger version
+                    src = src.replace(/\/\d+px-/, '/150px-');
+
+                    if (src.match(/\.(png|jpg|jpeg|gif|svg)/i)) {
+                        if (!imageColumns[colIdx]) {
+                            imageColumns[colIdx] = { name: headers[colIdx] || `Col ${colIdx + 1}`, images: [] };
                         }
-
-                        // Try to get larger image
-                        src = src.replace(/\/\d+px-/, '/200px-');
-
-                        if (src.includes('.png') || src.includes('.PNG') ||
-                            src.includes('.jpg') || src.includes('.jpeg') ||
-                            src.includes('.gif') || src.includes('.svg')) {
-
-                            if (!imageColumns[colIdx]) {
-                                imageColumns[colIdx] = {
-                                    name: headers[colIdx] || `Column ${colIdx + 1}`,
-                                    images: []
-                                };
-                            }
+                        if (!imageColumns[colIdx].images.includes(src)) {
                             imageColumns[colIdx].images.push(src);
                         }
-                    });
-
-                    // Handle colspan
-                    const colspan = parseInt(cell.getAttribute('colspan')) || 1;
-                    colIdx += colspan;
+                    }
                 });
-            }
 
-            // Filter to only columns with multiple images
-            const filtered = {};
-            for (const [col, data] of Object.entries(imageColumns)) {
-                if (data.images.length >= 2) {
-                    filtered[col] = data;
-                }
-            }
-
-            return filtered;
+                const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+                colIdx += colspan;
+            });
         }
 
-        async function processTable(table, imageColumns, tableIndex) {
-            const container = document.getElementById('tablesContainer');
-
-            // Get table caption or first header content for naming
-            const caption = table.querySelector('caption');
-            const firstHeader = table.querySelector('th');
-            const tableName = caption?.textContent.trim() ||
-                             `Table ${tableIndex}`;
-
-            const section = document.createElement('div');
-            section.className = 'table-section';
-            section.innerHTML = `<h2>${tableName}</h2><div class="columns-grid" id="table${tableIndex}Grid"></div>`;
-            container.appendChild(section);
-
-            const grid = section.querySelector('.columns-grid');
-
-            for (const [colIdx, colData] of Object.entries(imageColumns)) {
-                await processColumn(colData, tableIndex, colIdx, grid);
+        // Filter to columns with 2+ images
+        const filtered = {};
+        for (const [col, data] of Object.entries(imageColumns)) {
+            if (data.images.length >= 2) {
+                filtered[col] = data;
             }
         }
+        return filtered;
+    }
 
-        async function processColumn(colData, tableIndex, colIdx, grid) {
-            const card = document.createElement('div');
-            card.className = 'column-card';
-            card.innerHTML = `
-                <h3>${colData.name}</h3>
-                <div class="image-count">${colData.images.length} images</div>
-                <div class="placeholder" id="preview_${tableIndex}_${colIdx}">
-                    <div class="loading-spinner"></div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress_${tableIndex}_${colIdx}" style="width: 0%"></div>
-                </div>
-                <button class="download-btn" id="btn_${tableIndex}_${colIdx}" disabled>
-                    Loading...
-                </button>
-            `;
-            grid.appendChild(card);
+    async function processTable(table, imageColumns, tableIndex) {
+        const container = document.getElementById('tablesContainer');
+        const caption = table.querySelector('caption');
+        const tableName = caption?.textContent.trim() || `Table ${tableIndex}`;
 
+        const section = document.createElement('div');
+        section.className = 'table-section';
+        section.innerHTML = `<h2>${tableName}</h2><div class="columns-grid" id="table${tableIndex}Grid"></div>`;
+        container.appendChild(section);
+
+        const grid = section.querySelector('.columns-grid');
+
+        for (const [colIdx, colData] of Object.entries(imageColumns)) {
+            await processColumn(colData, tableIndex, colIdx, grid);
+        }
+    }
+
+    async function processColumn(colData, tableIndex, colIdx, grid) {
+        const cardId = `card_${tableIndex}_${colIdx}`;
+        const card = document.createElement('div');
+        card.className = 'column-card';
+        card.id = cardId;
+        card.innerHTML = `
+            <h3>${colData.name}</h3>
+            <div class="image-count">${colData.images.length} images</div>
+            <div class="placeholder" id="preview_${tableIndex}_${colIdx}">
+                <div class="loading-spinner"></div>
+                <small>Loading images...</small>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress_${tableIndex}_${colIdx}" style="width: 0%"></div>
+            </div>
+            <button class="download-btn" id="btn_${tableIndex}_${colIdx}" disabled>Loading...</button>
+        `;
+        grid.appendChild(card);
+
+        try {
+            const gifBlob = await createGifFromImages(colData.images, tableIndex, colIdx);
+
+            const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
+            const btnEl = document.getElementById(`btn_${tableIndex}_${colIdx}`);
+            const gifUrl = URL.createObjectURL(gifBlob);
+
+            previewEl.outerHTML = `<img src="${gifUrl}" class="gif-preview" alt="Animated GIF">`;
+            btnEl.textContent = 'Download GIF';
+            btnEl.disabled = false;
+
+            const fileName = `wenninger_t${tableIndex}_${colData.name.replace(/[^a-z0-9]/gi, '_')}.gif`;
+            btnEl.onclick = () => {
+                const a = document.createElement('a');
+                a.href = gifUrl;
+                a.download = fileName;
+                a.click();
+            };
+
+            allGifs.push({ blob: gifBlob, name: fileName });
+            log(`Created GIF: ${fileName}`);
+
+        } catch (error) {
+            console.error('GIF creation error:', error);
+            const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
+            const btnEl = document.getElementById(`btn_${tableIndex}_${colIdx}`);
+            if (previewEl) previewEl.innerHTML = `<span style="color: #ff4757; font-size: 12px;">Error: ${error.message}</span>`;
+            if (btnEl) btnEl.textContent = 'Failed';
+        }
+    }
+
+    async function createGifFromImages(imageUrls, tableIndex, colIdx) {
+        const progressEl = document.getElementById(`progress_${tableIndex}_${colIdx}`);
+        const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
+
+        const images = [];
+        let loaded = 0;
+
+        for (const url of imageUrls) {
             try {
-                const gifBlob = await createGifFromImages(colData.images, tableIndex, colIdx);
-
-                const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
-                const btnEl = document.getElementById(`btn_${tableIndex}_${colIdx}`);
-
-                const gifUrl = URL.createObjectURL(gifBlob);
-
-                previewEl.outerHTML = `<img src="${gifUrl}" class="gif-preview" alt="Animated GIF">`;
-
-                btnEl.textContent = 'Download GIF';
-                btnEl.disabled = false;
-                btnEl.onclick = () => {
-                    const a = document.createElement('a');
-                    a.href = gifUrl;
-                    a.download = `wenninger_table${tableIndex}_${colData.name.replace(/[^a-z0-9]/gi, '_')}.gif`;
-                    a.click();
-                };
-
-                allGifs.push({
-                    blob: gifBlob,
-                    name: `wenninger_table${tableIndex}_${colData.name.replace(/[^a-z0-9]/gi, '_')}.gif`
-                });
-
-            } catch (error) {
-                console.error('Error creating GIF:', error);
-                const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
-                const btnEl = document.getElementById(`btn_${tableIndex}_${colIdx}`);
-                previewEl.innerHTML = `<span style="color: #ff4757;">Error loading images</span>`;
-                btnEl.textContent = 'Failed';
-            }
-        }
-
-        async function createGifFromImages(imageUrls, tableIndex, colIdx) {
-            const progressEl = document.getElementById(`progress_${tableIndex}_${colIdx}`);
-
-            // Load all images
-            const images = [];
-            let loaded = 0;
-
-            for (const url of imageUrls) {
-                try {
-                    const img = await loadImage(url);
-                    images.push(img);
-                } catch (e) {
-                    console.warn('Failed to load image:', url, e);
+                if (previewEl) {
+                    const small = previewEl.querySelector('small');
+                    if (small) small.textContent = `Loading ${loaded + 1}/${imageUrls.length}...`;
                 }
-                loaded++;
-                progressEl.style.width = `${(loaded / imageUrls.length) * 50}%`;
+                const img = await loadImage(url);
+                images.push(img);
+            } catch (e) {
+                console.warn('Failed to load:', url);
             }
-
-            if (images.length < 2) {
-                throw new Error('Not enough images loaded');
-            }
-
-            // Find max dimensions
-            let maxWidth = 0;
-            let maxHeight = 0;
-            for (const img of images) {
-                maxWidth = Math.max(maxWidth, img.width);
-                maxHeight = Math.max(maxHeight, img.height);
-            }
-
-            // Cap dimensions for performance
-            const scale = Math.min(1, 200 / Math.max(maxWidth, maxHeight));
-            maxWidth = Math.round(maxWidth * scale);
-            maxHeight = Math.round(maxHeight * scale);
-
-            // Create GIF
-            return new Promise((resolve, reject) => {
-                const gif = new GIF({
-                    workers: 2,
-                    quality: 10,
-                    width: maxWidth,
-                    height: maxHeight,
-                    workerScript: GIF_WORKER_URL
-                });
-
-                // Add frames
-                const canvas = document.createElement('canvas');
-                canvas.width = maxWidth;
-                canvas.height = maxHeight;
-                const ctx = canvas.getContext('2d');
-
-                for (const img of images) {
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, maxWidth, maxHeight);
-
-                    // Center image
-                    const imgScale = Math.min(maxWidth / img.width, maxHeight / img.height);
-                    const w = img.width * imgScale;
-                    const h = img.height * imgScale;
-                    const x = (maxWidth - w) / 2;
-                    const y = (maxHeight - h) / 2;
-
-                    ctx.drawImage(img, x, y, w, h);
-                    gif.addFrame(ctx, {copy: true, delay: frameDelay});
-                }
-
-                gif.on('progress', (p) => {
-                    progressEl.style.width = `${50 + p * 50}%`;
-                });
-
-                gif.on('finished', (blob) => {
-                    progressEl.style.width = '100%';
-                    resolve(blob);
-                });
-
-                gif.render();
-            });
+            loaded++;
+            if (progressEl) progressEl.style.width = `${(loaded / imageUrls.length) * 50}%`;
         }
 
-        function loadImage(url) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-
-                // Use a CORS proxy for images
-                const proxiedUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-
-                img.onload = () => resolve(img);
-                img.onerror = () => {
-                    // Try without proxy as fallback
-                    const img2 = new Image();
-                    img2.crossOrigin = 'anonymous';
-                    img2.onload = () => resolve(img2);
-                    img2.onerror = reject;
-                    img2.src = url;
-                };
-                img.src = proxiedUrl;
-            });
+        if (images.length < 2) {
+            throw new Error(`Only ${images.length} images loaded`);
         }
 
-        function downloadAllGifs() {
-            allGifs.forEach((gif, idx) => {
-                setTimeout(() => {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(gif.blob);
-                    a.download = gif.name;
-                    a.click();
-                }, idx * 500); // Stagger downloads
-            });
+        // Calculate dimensions
+        let maxWidth = 0, maxHeight = 0;
+        for (const img of images) {
+            maxWidth = Math.max(maxWidth, img.width);
+            maxHeight = Math.max(maxHeight, img.height);
         }
+
+        // Scale down for performance
+        const maxDim = 150;
+        const scale = Math.min(1, maxDim / Math.max(maxWidth, maxHeight));
+        maxWidth = Math.round(maxWidth * scale);
+        maxHeight = Math.round(maxHeight * scale);
+
+        if (previewEl) {
+            const small = previewEl.querySelector('small');
+            if (small) small.textContent = 'Encoding GIF...';
+        }
+
+        // Create GIF
+        const encoder = new GIFEncoder(maxWidth, maxHeight);
+        encoder.setDelay(frameDelay);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = maxWidth;
+        canvas.height = maxHeight;
+        const ctx = canvas.getContext('2d');
+
+        for (let i = 0; i < images.length; i++) {
+            const img = images[i];
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, maxWidth, maxHeight);
+
+            const imgScale = Math.min(maxWidth / img.width, maxHeight / img.height);
+            const w = img.width * imgScale;
+            const h = img.height * imgScale;
+            const x = (maxWidth - w) / 2;
+            const y = (maxHeight - h) / 2;
+
+            ctx.drawImage(img, x, y, w, h);
+            encoder.addFrame(canvas);
+
+            if (progressEl) progressEl.style.width = `${50 + ((i + 1) / images.length) * 50}%`;
+        }
+
+        const blob = encoder.finish();
+        if (progressEl) progressEl.style.width = '100%';
+        return blob;
+    }
+
+    async function loadImage(url) {
+        // Try multiple proxy strategies
+        const proxies = [
+            (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
+            (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+            (u) => u // Direct (may work for some images)
+        ];
+
+        for (const proxyFn of proxies) {
+            try {
+                const proxiedUrl = proxyFn(url);
+                const img = await new Promise((resolve, reject) => {
+                    const image = new Image();
+                    image.crossOrigin = 'anonymous';
+                    image.onload = () => resolve(image);
+                    image.onerror = reject;
+                    setTimeout(() => reject(new Error('Timeout')), 10000);
+                    image.src = proxiedUrl;
+                });
+                return img;
+            } catch (e) {
+                continue;
+            }
+        }
+        throw new Error('All image load attempts failed');
+    }
+
+    function downloadAllGifs() {
+        allGifs.forEach((gif, idx) => {
+            setTimeout(() => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(gif.blob);
+                a.download = gif.name;
+                a.click();
+            }, idx * 300);
+        });
+    }
     </script>
 </body>
 </html>
