@@ -137,9 +137,11 @@
 
         try {
             const proxies = [
+                { name: 'corsproxy.org', url: 'https://corsproxy.org/?' },
+                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' },
                 { name: 'allorigins-get', url: 'https://api.allorigins.win/get?url=', isJson: true },
-                { name: 'corsproxy', url: 'https://corsproxy.io/?' },
-                { name: 'thingproxy', url: 'https://thingproxy.freeboard.io/fetch/' }
+                { name: 'corsanywhere', url: 'https://cors-anywhere.herokuapp.com/' },
+                { name: 'corsproxy.io', url: 'https://corsproxy.io/?' }
             ];
 
             const targetUrl = document.getElementById('urlInput').value.trim();
@@ -458,9 +460,9 @@
 
     async function loadImage(url) {
         const proxies = [
+            (u) => 'https://corsproxy.org/?' + encodeURIComponent(u),
             (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
             (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
-            (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
             (u) => u
         ];
 
