@@ -266,9 +266,10 @@
         try {
             // Try multiple CORS proxies
             const proxies = [
-                { name: 'corsproxy.io', url: 'https://corsproxy.io/?' },
-                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' },
-                { name: 'cors-anywhere', url: 'https://cors-anywhere.herokuapp.com/' }
+                { name: 'corsproxy', url: 'https://proxy.cors.sh/' },
+                { name: 'thingproxy', url: 'https://thingproxy.freeboard.io/fetch/' },
+                { name: 'allorigins-get', url: 'https://api.allorigins.win/get?url=', isJson: true },
+                { name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' }
             ];
 
             const targetUrl = 'https://en.wikipedia.org/wiki/List_of_Wenninger_polyhedron_models';
@@ -278,11 +279,14 @@
                 try {
                     log(`Trying ${proxy.name}...`);
                     const fullUrl = proxy.url + encodeURIComponent(targetUrl);
-                    const response = await fetch(fullUrl, {
-                        headers: { 'Accept': 'text/html' }
-                    });
+                    const response = await fetch(fullUrl);
                     if (response.ok) {
-                        html = await response.text();
+                        if (proxy.isJson) {
+                            const json = await response.json();
+                            html = json.contents;
+                        } else {
+                            html = await response.text();
+                        }
                         log(`Success with ${proxy.name}!`);
                         break;
                     } else {
@@ -554,8 +558,9 @@
     async function loadImage(url) {
         // Try multiple proxy strategies
         const proxies = [
-            (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
-            (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+            (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
+            (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+            (u) => 'https://proxy.cors.sh/' + u,
             (u) => u // Direct (may work for some images)
         ];
 
