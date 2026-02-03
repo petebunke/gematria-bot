@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wenninger Polyhedron Animated GIF Maker</title>
+    <title>Table Image GIF Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -36,7 +37,7 @@
         .columns-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         .column-card { background: #0f0f23; padding: 15px; border-radius: 8px; text-align: center; }
         .column-card h3 { color: #ffd700; margin-top: 0; font-size: 14px; }
-        .gif-preview { width: 100%; max-width: 200px; height: auto; border: 2px solid #333; border-radius: 4px; margin: 10px 0; }
+        .gif-preview { width: 100%; max-width: 300px; height: auto; border: 2px solid #333; border-radius: 4px; margin: 10px 0; }
         .placeholder { width: 200px; height: 200px; background: #222; display: flex; align-items: center; justify-content: center; margin: 10px auto; border-radius: 4px; color: #666; flex-direction: column; }
         .progress-bar { width: 100%; height: 20px; background: #333; border-radius: 10px; overflow: hidden; margin: 10px 0; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #00d4ff, #0066ff); transition: width 0.3s; }
@@ -57,7 +58,6 @@
         .controls { text-align: center; margin-bottom: 20px; }
         .speed-control { margin: 15px 0; }
         .speed-control label { color: #888; }
-        .speed-control input { width: 200px; }
         .download-all-btn { background: linear-gradient(135deg, #ffd700, #ff8c00); margin-top: 20px; padding: 12px 30px; font-size: 16px; }
     </style>
 </head>
@@ -85,162 +85,14 @@
     <div id="tablesContainer" class="tables-container"></div>
 
     <script>
-    // ========== INLINE GIF ENCODER (no external dependencies) ==========
-    // Based on jsgif library - simplified for our use case
-    class GIFEncoder {
-        constructor(width, height) {
-            this.width = width;
-            this.height = height;
-            this.frames = [];
-            this.delay = 100;
-        }
-
-        setDelay(ms) { this.delay = ms; }
-
-        addFrame(canvas) {
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, this.width, this.height);
-            this.frames.push({
-                data: imageData.data,
-                delay: this.delay
-            });
-        }
-
-        finish() {
-            const stream = [];
-
-            // GIF Header
-            stream.push(0x47, 0x49, 0x46, 0x38, 0x39, 0x61); // GIF89a
-
-            // Logical Screen Descriptor
-            stream.push(this.width & 0xFF, (this.width >> 8) & 0xFF);
-            stream.push(this.height & 0xFF, (this.height >> 8) & 0xFF);
-            stream.push(0xF7, 0x00, 0x00); // Global color table flag, 256 colors
-
-            // Global Color Table (256 colors)
-            for (let i = 0; i < 256; i++) {
-                stream.push(i, i, i); // Grayscale palette
-            }
-
-            // Netscape extension for looping
-            stream.push(0x21, 0xFF, 0x0B);
-            stream.push(0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2E, 0x30);
-            stream.push(0x03, 0x01, 0x00, 0x00, 0x00);
-
-            for (const frame of this.frames) {
-                // Graphic Control Extension
-                const delayCs = Math.round(frame.delay / 10);
-                stream.push(0x21, 0xF9, 0x04, 0x04);
-                stream.push(delayCs & 0xFF, (delayCs >> 8) & 0xFF);
-                stream.push(0x00, 0x00);
-
-                // Image Descriptor
-                stream.push(0x2C);
-                stream.push(0x00, 0x00, 0x00, 0x00); // Left, Top
-                stream.push(this.width & 0xFF, (this.width >> 8) & 0xFF);
-                stream.push(this.height & 0xFF, (this.height >> 8) & 0xFF);
-                stream.push(0x00); // No local color table
-
-                // Image Data - LZW encode
-                const pixels = this.quantizeFrame(frame.data);
-                const encoded = this.lzwEncode(pixels);
-                stream.push(...encoded);
-            }
-
-            // GIF Trailer
-            stream.push(0x3B);
-
-            return new Blob([new Uint8Array(stream)], { type: 'image/gif' });
-        }
-
-        quantizeFrame(data) {
-            const pixels = [];
-            for (let i = 0; i < data.length; i += 4) {
-                // Convert to grayscale
-                const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-                pixels.push(gray);
-            }
-            return pixels;
-        }
-
-        lzwEncode(pixels) {
-            const minCodeSize = 8;
-            const clearCode = 256;
-            const eoiCode = 257;
-
-            const output = [minCodeSize];
-            let codeSize = minCodeSize + 1;
-            let nextCode = 258;
-            const codeTable = new Map();
-
-            // Initialize code table
-            for (let i = 0; i < 256; i++) {
-                codeTable.set(String(i), i);
-            }
-
-            let buffer = 0;
-            let bufferSize = 0;
-            const subBlocks = [];
-            let currentSubBlock = [];
-
-            const writeCode = (code) => {
-                buffer |= (code << bufferSize);
-                bufferSize += codeSize;
-                while (bufferSize >= 8) {
-                    currentSubBlock.push(buffer & 0xFF);
-                    buffer >>= 8;
-                    bufferSize -= 8;
-                    if (currentSubBlock.length === 255) {
-                        subBlocks.push(currentSubBlock.length, ...currentSubBlock);
-                        currentSubBlock = [];
-                    }
-                }
-            };
-
-            writeCode(clearCode);
-
-            let indexBuffer = String(pixels[0]);
-            for (let i = 1; i < pixels.length; i++) {
-                const k = String(pixels[i]);
-                const indexBufferPlusK = indexBuffer + ',' + k;
-
-                if (codeTable.has(indexBufferPlusK)) {
-                    indexBuffer = indexBufferPlusK;
-                } else {
-                    writeCode(codeTable.get(indexBuffer));
-                    if (nextCode < 4096) {
-                        codeTable.set(indexBufferPlusK, nextCode++);
-                        if (nextCode > (1 << codeSize) && codeSize < 12) {
-                            codeSize++;
-                        }
-                    }
-                    indexBuffer = k;
-                }
-            }
-
-            writeCode(codeTable.get(indexBuffer));
-            writeCode(eoiCode);
-
-            if (bufferSize > 0) {
-                currentSubBlock.push(buffer & 0xFF);
-            }
-            if (currentSubBlock.length > 0) {
-                subBlocks.push(currentSubBlock.length, ...currentSubBlock);
-            }
-            subBlocks.push(0); // Block terminator
-
-            output.push(...subBlocks);
-            return output;
-        }
-    }
-    // ========== END GIF ENCODER ==========
+    const GIF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
 
     let frameDelay = 1;
     const allGifs = [];
     let logMessages = [];
 
     document.getElementById('speedSlider').addEventListener('input', (e) => {
-        frameDelay = parseInt(e.target.value);
+        frameDelay = parseInt(e.target.value) || 1;
         document.getElementById('speedValue').textContent = frameDelay;
     });
 
@@ -269,7 +121,6 @@
         log('Starting process...');
 
         try {
-            // Try multiple CORS proxies
             const proxies = [
                 { name: 'allorigins-get', url: 'https://api.allorigins.win/get?url=', isJson: true },
                 { name: 'corsproxy', url: 'https://corsproxy.io/?' },
@@ -313,7 +164,6 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
-            // Find all tables (wikitable or regular)
             let tables = doc.querySelectorAll('table.wikitable');
             if (tables.length === 0) {
                 tables = doc.querySelectorAll('table');
@@ -365,7 +215,6 @@
         const imageColumns = {};
         const headers = [];
 
-        // Get headers
         const headerRow = rows[0];
         if (headerRow) {
             headerRow.querySelectorAll('th, td').forEach((cell, idx) => {
@@ -373,7 +222,6 @@
             });
         }
 
-        // Scan rows for images
         for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
             const cells = rows[rowIdx].querySelectorAll('td, th');
             let colIdx = 0;
@@ -386,9 +234,9 @@
                     if (src.startsWith('//')) src = 'https:' + src;
                     else if (src.startsWith('/')) src = baseUrl + src;
 
-                    // For Wikipedia, try to get larger version
+                    // For Wikipedia, get full resolution
                     if (src.includes('wikipedia') || src.includes('wikimedia')) {
-                        src = src.replace(/\/\d+px-/, '/200px-');
+                        src = src.replace(/\/\d+px-/, '/800px-');
                     }
 
                     if (src.match(/\.(png|jpg|jpeg|gif|svg)/i)) {
@@ -406,7 +254,6 @@
             });
         }
 
-        // Filter to columns with 2+ images
         const filtered = {};
         for (const [col, data] of Object.entries(imageColumns)) {
             if (data.images.length >= 2) {
@@ -434,10 +281,8 @@
     }
 
     async function processColumn(colData, tableIndex, colIdx, grid) {
-        const cardId = `card_${tableIndex}_${colIdx}`;
         const card = document.createElement('div');
         card.className = 'column-card';
-        card.id = cardId;
         card.innerHTML = `
             <h3>${colData.name}</h3>
             <div class="image-count">${colData.images.length} images</div>
@@ -499,83 +344,87 @@
                 const img = await loadImage(url);
                 images.push(img);
             } catch (e) {
-                console.warn('Failed to load:', url);
+                console.warn('Failed to load:', url, e);
             }
             loaded++;
-            if (progressEl) progressEl.style.width = `${(loaded / imageUrls.length) * 50}%`;
+            if (progressEl) progressEl.style.width = `${(loaded / imageUrls.length) * 40}%`;
         }
 
         if (images.length < 2) {
             throw new Error(`Only ${images.length} images loaded`);
         }
 
-        // Calculate dimensions
+        // Use full resolution - find max dimensions
         let maxWidth = 0, maxHeight = 0;
         for (const img of images) {
             maxWidth = Math.max(maxWidth, img.width);
             maxHeight = Math.max(maxHeight, img.height);
         }
 
-        // Scale down for performance
-        const maxDim = 150;
-        const scale = Math.min(1, maxDim / Math.max(maxWidth, maxHeight));
-        maxWidth = Math.round(maxWidth * scale);
-        maxHeight = Math.round(maxHeight * scale);
-
         if (previewEl) {
             const small = previewEl.querySelector('small');
             if (small) small.textContent = 'Encoding GIF...';
         }
 
-        // Create GIF with ping-pong animation (forward then backward, no repeated frames)
-        const encoder = new GIFEncoder(maxWidth, maxHeight);
-        encoder.setDelay(frameDelay);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = maxWidth;
-        canvas.height = maxHeight;
-        const ctx = canvas.getContext('2d');
-
-        // Build ping-pong sequence: [0, 1, 2, 3, 4, 3, 2, 1] for 5 images
+        // Build ping-pong sequence
         const pingPongSequence = [];
         for (let i = 0; i < images.length; i++) {
             pingPongSequence.push(i);
         }
-        // Add reverse sequence excluding first and last to avoid duplicates
         for (let i = images.length - 2; i > 0; i--) {
             pingPongSequence.push(i);
         }
 
-        const totalFrames = pingPongSequence.length;
-        for (let f = 0; f < totalFrames; f++) {
-            const img = images[pingPongSequence[f]];
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, maxWidth, maxHeight);
+        // Create GIF using gif.js for full color support
+        return new Promise((resolve, reject) => {
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: maxWidth,
+                height: maxHeight,
+                workerScript: GIF_WORKER_URL
+            });
 
-            const imgScale = Math.min(maxWidth / img.width, maxHeight / img.height);
-            const w = img.width * imgScale;
-            const h = img.height * imgScale;
-            const x = (maxWidth - w) / 2;
-            const y = (maxHeight - h) / 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+            const ctx = canvas.getContext('2d');
 
-            ctx.drawImage(img, x, y, w, h);
-            encoder.addFrame(canvas);
+            const totalFrames = pingPongSequence.length;
+            for (let f = 0; f < totalFrames; f++) {
+                const img = images[pingPongSequence[f]];
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, maxWidth, maxHeight);
 
-            if (progressEl) progressEl.style.width = `${50 + ((f + 1) / totalFrames) * 50}%`;
-        }
+                // Center image at full size
+                const x = (maxWidth - img.width) / 2;
+                const y = (maxHeight - img.height) / 2;
+                ctx.drawImage(img, x, y);
 
-        const blob = encoder.finish();
-        if (progressEl) progressEl.style.width = '100%';
-        return blob;
+                gif.addFrame(ctx, { copy: true, delay: frameDelay });
+            }
+
+            gif.on('progress', (p) => {
+                if (progressEl) progressEl.style.width = `${40 + p * 60}%`;
+            });
+
+            gif.on('finished', (blob) => {
+                if (progressEl) progressEl.style.width = '100%';
+                resolve(blob);
+            });
+
+            gif.on('error', reject);
+
+            gif.render();
+        });
     }
 
     async function loadImage(url) {
-        // Try multiple proxy strategies
         const proxies = [
             (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
             (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
             (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
-            (u) => u // Direct (may work for some images)
+            (u) => u
         ];
 
         for (const proxyFn of proxies) {
@@ -586,7 +435,7 @@
                     image.crossOrigin = 'anonymous';
                     image.onload = () => resolve(image);
                     image.onerror = reject;
-                    setTimeout(() => reject(new Error('Timeout')), 10000);
+                    setTimeout(() => reject(new Error('Timeout')), 15000);
                     image.src = proxiedUrl;
                 });
                 return img;
