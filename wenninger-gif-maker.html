@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Table Image GIF Maker</title>
     <script src="https://unpkg.com/gif.js@0.2.0/dist/gif.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
     // Fallback: try alternate CDN if GIF not defined after load
     window.addEventListener('load', function() {
@@ -205,11 +206,23 @@
                 document.getElementById('status').className = 'status success';
 
                 if (allGifs.length > 1) {
+                    const btnContainer = document.createElement('div');
+                    btnContainer.style.cssText = 'display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;';
+
                     const downloadAllBtn = document.createElement('button');
                     downloadAllBtn.className = 'download-btn download-all-btn';
                     downloadAllBtn.textContent = `Download All ${allGifs.length} GIFs`;
                     downloadAllBtn.onclick = downloadAllGifs;
-                    tablesContainer.appendChild(downloadAllBtn);
+
+                    const downloadZipBtn = document.createElement('button');
+                    downloadZipBtn.className = 'download-btn download-all-btn';
+                    downloadZipBtn.style.background = 'linear-gradient(135deg, #9b59b6, #8e44ad)';
+                    downloadZipBtn.textContent = `Download All as ZIP`;
+                    downloadZipBtn.onclick = downloadAllAsZip;
+
+                    btnContainer.appendChild(downloadAllBtn);
+                    btnContainer.appendChild(downloadZipBtn);
+                    tablesContainer.appendChild(btnContainer);
                 }
             }
 
@@ -399,7 +412,8 @@
                 quality: 10,
                 width: maxWidth,
                 height: maxHeight,
-                workerScript: GIF_WORKER_URL
+                workerScript: GIF_WORKER_URL,
+                transparent: 0x00000000
             });
 
             const canvas = document.createElement('canvas');
@@ -410,15 +424,15 @@
             const totalFrames = pingPongSequence.length;
             for (let f = 0; f < totalFrames; f++) {
                 const img = images[pingPongSequence[f]];
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, maxWidth, maxHeight);
+                // Clear to transparent instead of filling with white
+                ctx.clearRect(0, 0, maxWidth, maxHeight);
 
                 // Center image at full size
                 const x = (maxWidth - img.width) / 2;
                 const y = (maxHeight - img.height) / 2;
                 ctx.drawImage(img, x, y);
 
-                gif.addFrame(ctx, { copy: true, delay: frameDelay });
+                gif.addFrame(ctx, { copy: true, delay: frameDelay, transparent: 0x00000000 });
             }
 
             gif.on('progress', (p) => {
@@ -472,6 +486,22 @@
                 a.click();
             }, idx * 300);
         });
+    }
+
+    async function downloadAllAsZip() {
+        if (typeof JSZip === 'undefined') {
+            alert('JSZip library not loaded. Try refreshing the page.');
+            return;
+        }
+        const zip = new JSZip();
+        allGifs.forEach(gif => {
+            zip.file(gif.name, gif.blob);
+        });
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = 'table_gifs.zip';
+        a.click();
     }
     </script>
 </body>
