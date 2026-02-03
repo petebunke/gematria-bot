@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Table Image GIF Maker</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+    <script src="https://unpkg.com/gif.js@0.2.0/dist/gif.js"></script>
+    <script>
+    // Fallback: try alternate CDN if GIF not defined after load
+    window.addEventListener('load', function() {
+        if (typeof GIF === 'undefined') {
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+            document.head.appendChild(s);
+        }
+    });
+    </script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -85,7 +95,7 @@
     <div id="tablesContainer" class="tables-container"></div>
 
     <script>
-    const GIF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
+    const GIF_WORKER_URL = 'https://unpkg.com/gif.js@0.2.0/dist/gif.worker.js';
 
     let frameDelay = 1;
     const allGifs = [];
@@ -377,6 +387,10 @@
 
         // Create GIF using gif.js for full color support
         return new Promise((resolve, reject) => {
+            if (typeof GIF === 'undefined') {
+                reject(new Error('GIF library not loaded. Try refreshing the page.'));
+                return;
+            }
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
