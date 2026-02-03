@@ -83,8 +83,9 @@
                    style="width: 100%; max-width: 600px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; margin-top: 5px;">
         </div>
         <div class="speed-control">
-            <label>Animation Speed (ms per frame): <span id="speedValue">1</span></label><br>
-            <input type="number" id="speedSlider" min="1" max="9999" value="1" style="width: 80px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+            <label>Frame Rate: <span id="speedValue">10</span> FPS</label><br>
+            <input type="number" id="fpsInput" min="1" max="100" value="10" style="width: 80px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+            <span style="color: #666; font-size: 12px; margin-left: 10px;">(GIF min ~10ms/frame = 100fps max)</span>
         </div>
         <button class="download-btn start-btn" id="startBtn" onclick="startProcess()">
             Start Processing
@@ -101,13 +102,13 @@
     const GIF_WORKER_BLOB = new Blob([GIF_WORKER_CODE], { type: 'application/javascript' });
     const GIF_WORKER_URL = URL.createObjectURL(GIF_WORKER_BLOB);
 
-    let frameDelay = 1;
+    let fps = 10;
     const allGifs = [];
     let logMessages = [];
 
-    document.getElementById('speedSlider').addEventListener('input', (e) => {
-        frameDelay = parseInt(e.target.value) || 1;
-        document.getElementById('speedValue').textContent = frameDelay;
+    document.getElementById('fpsInput').addEventListener('input', (e) => {
+        fps = Math.max(1, Math.min(100, parseInt(e.target.value) || 10));
+        document.getElementById('speedValue').textContent = fps;
     });
 
     function log(message) {
@@ -407,13 +408,17 @@
                 reject(new Error('GIF library not loaded. Try refreshing the page.'));
                 return;
             }
+            // Calculate delay from FPS (in ms)
+            // GIF delay is in centiseconds, gif.js expects ms
+            const frameDelayMs = Math.round(1000 / fps);
+
             const gif = new GIF({
                 workers: 2,
-                quality: 10,
+                quality: 1,  // Best quality
                 width: maxWidth,
                 height: maxHeight,
                 workerScript: GIF_WORKER_URL,
-                transparent: 0x00000000
+                background: '#ffffff'
             });
 
             const canvas = document.createElement('canvas');
@@ -424,15 +429,16 @@
             const totalFrames = pingPongSequence.length;
             for (let f = 0; f < totalFrames; f++) {
                 const img = images[pingPongSequence[f]];
-                // Clear to transparent instead of filling with white
-                ctx.clearRect(0, 0, maxWidth, maxHeight);
+                // Fill with pure white background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, maxWidth, maxHeight);
 
                 // Center image at full size
                 const x = (maxWidth - img.width) / 2;
                 const y = (maxHeight - img.height) / 2;
                 ctx.drawImage(img, x, y);
 
-                gif.addFrame(ctx, { copy: true, delay: frameDelay, transparent: 0x00000000 });
+                gif.addFrame(ctx, { copy: true, delay: frameDelayMs });
             }
 
             gif.on('progress', (p) => {
