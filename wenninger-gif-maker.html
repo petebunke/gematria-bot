@@ -62,10 +62,15 @@
     </style>
 </head>
 <body>
-    <h1>Wenninger Polyhedron GIF Maker</h1>
-    <p class="subtitle">Creates animated GIFs from table columns on the Wikipedia page</p>
+    <h1>Table Image GIF Maker</h1>
+    <p class="subtitle">Creates animated GIFs from table columns containing images on any webpage</p>
 
     <div class="controls">
+        <div style="margin-bottom: 15px;">
+            <label style="color: #888;">Page URL:</label><br>
+            <input type="text" id="urlInput" value="https://en.wikipedia.org/wiki/List_of_Wenninger_polyhedron_models"
+                   style="width: 100%; max-width: 600px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; margin-top: 5px;">
+        </div>
         <div class="speed-control">
             <label>Animation Speed (ms per frame): <span id="speedValue">1</span></label><br>
             <input type="number" id="speedSlider" min="1" max="9999" value="1" style="width: 80px; padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
@@ -266,13 +271,16 @@
         try {
             // Try multiple CORS proxies
             const proxies = [
-                { name: 'corsproxy', url: 'https://proxy.cors.sh/' },
-                { name: 'thingproxy', url: 'https://thingproxy.freeboard.io/fetch/' },
                 { name: 'allorigins-get', url: 'https://api.allorigins.win/get?url=', isJson: true },
-                { name: 'codetabs', url: 'https://api.codetabs.com/v1/proxy?quest=' }
+                { name: 'corsproxy', url: 'https://corsproxy.io/?' },
+                { name: 'thingproxy', url: 'https://thingproxy.freeboard.io/fetch/' }
             ];
 
-            const targetUrl = 'https://en.wikipedia.org/wiki/List_of_Wenninger_polyhedron_models';
+            const targetUrl = document.getElementById('urlInput').value.trim();
+            if (!targetUrl) {
+                throw new Error('Please enter a URL');
+            }
+            const baseUrl = new URL(targetUrl).origin;
             let html = null;
 
             for (const proxy of proxies) {
@@ -305,15 +313,19 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
-            const tables = doc.querySelectorAll('table.wikitable');
-            log(`Found ${tables.length} wikitables`);
+            // Find all tables (wikitable or regular)
+            let tables = doc.querySelectorAll('table.wikitable');
+            if (tables.length === 0) {
+                tables = doc.querySelectorAll('table');
+            }
+            log(`Found ${tables.length} tables`);
 
             const tablesContainer = document.getElementById('tablesContainer');
             tablesContainer.innerHTML = '';
 
             let tableIndex = 0;
             for (const table of tables) {
-                const imageColumns = findImageColumns(table);
+                const imageColumns = findImageColumns(table, baseUrl);
                 const colCount = Object.keys(imageColumns).length;
 
                 if (colCount > 0) {
@@ -348,7 +360,7 @@
         startBtn.textContent = 'Start Processing';
     }
 
-    function findImageColumns(table) {
+    function findImageColumns(table, baseUrl) {
         const rows = table.querySelectorAll('tr');
         const imageColumns = {};
         const headers = [];
@@ -372,10 +384,12 @@
                     let src = img.getAttribute('src') || '';
 
                     if (src.startsWith('//')) src = 'https:' + src;
-                    else if (src.startsWith('/')) src = 'https://en.wikipedia.org' + src;
+                    else if (src.startsWith('/')) src = baseUrl + src;
 
-                    // Get larger version
-                    src = src.replace(/\/\d+px-/, '/150px-');
+                    // For Wikipedia, try to get larger version
+                    if (src.includes('wikipedia') || src.includes('wikimedia')) {
+                        src = src.replace(/\/\d+px-/, '/200px-');
+                    }
 
                     if (src.match(/\.(png|jpg|jpeg|gif|svg)/i)) {
                         if (!imageColumns[colIdx]) {
@@ -558,9 +572,9 @@
     async function loadImage(url) {
         // Try multiple proxy strategies
         const proxies = [
+            (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+            (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
             (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
-            (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
-            (u) => 'https://proxy.cors.sh/' + u,
             (u) => u // Direct (may work for some images)
         ];
 
