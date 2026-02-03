@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wenninger Polyhedron Animated GIF Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #00d4ff;
+        }
+        .status.error {
+            border-left-color: #ff4757;
+        }
+        .status.success {
+            border-left-color: #2ed573;
+        }
+        .tables-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .table-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        .table-section h2 {
+            color: #00d4ff;
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .columns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .column-card {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .column-card h3 {
+            color: #ffd700;
+            margin-top: 0;
+            font-size: 14px;
+        }
+        .gif-preview {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            border: 2px solid #333;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .placeholder {
+            width: 200px;
+            height: 200px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px auto;
+            border-radius: 4px;
+            color: #666;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #0066ff);
+            transition: width 0.3s;
+        }
+        .download-btn {
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+        .download-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .image-count {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .start-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 40px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #2ed573, #17a558);
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .speed-control {
+            margin: 15px 0;
+        }
+        .speed-control label {
+            color: #888;
+        }
+        .speed-control input {
+            width: 200px;
+        }
+        .download-all-btn {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wenninger Polyhedron GIF Maker</h1>
+    <p class="subtitle">Creates animated GIFs from table columns on the Wikipedia page</p>
+
+    <div class="controls">
+        <div class="speed-control">
+            <label>Animation Speed (ms per frame): <span id="speedValue">500</span></label><br>
+            <input type="range" id="speedSlider" min="100" max="2000" value="500" step="50">
+        </div>
+        <button class="download-btn start-btn" id="startBtn" onclick="startProcess()">
+            Start Processing
+        </button>
+    </div>
+
+    <div id="status" class="status">
+        Click "Start Processing" to fetch the Wikipedia page and generate animated GIFs from table columns containing images.
+    </div>
+
+    <div id="tablesContainer" class="tables-container"></div>
+
+    <script>
+        // GIF.js worker script loaded from CDN
+        const GIF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
+
+        let frameDelay = 500;
+        const allGifs = [];
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            frameDelay = parseInt(e.target.value);
+            document.getElementById('speedValue').textContent = frameDelay;
+        });
+
+        function setStatus(message, type = '') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+        }
+
+        async function startProcess() {
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = 'Processing...';
+
+            setStatus('Fetching Wikipedia page via CORS proxy...');
+
+            try {
+                // Try multiple CORS proxies
+                const proxies = [
+                    'https://api.allorigins.win/raw?url=',
+                    'https://corsproxy.io/?',
+                    'https://api.codetabs.com/v1/proxy?quest='
+                ];
+
+                const targetUrl = 'https://en.wikipedia.org/wiki/List_of_Wenninger_polyhedron_models';
+                let html = null;
+
+                for (const proxy of proxies) {
+                    try {
+                        setStatus(`Trying proxy: ${proxy.split('/')[2]}...`);
+                        const response = await fetch(proxy + encodeURIComponent(targetUrl));
+                        if (response.ok) {
+                            html = await response.text();
+                            break;
+                        }
+                    } catch (e) {
+                        console.log('Proxy failed:', proxy, e);
+                    }
+                }
+
+                if (!html) {
+                    throw new Error('All proxies failed. Please try again later.');
+                }
+
+                setStatus('Parsing page content...');
+
+                // Parse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Find all tables with images
+                const tables = doc.querySelectorAll('table.wikitable');
+                setStatus(`Found ${tables.length} tables. Analyzing for image columns...`);
+
+                const tablesContainer = document.getElementById('tablesContainer');
+                tablesContainer.innerHTML = '';
+
+                let tableIndex = 0;
+                for (const table of tables) {
+                    const imageColumns = findImageColumns(table);
+
+                    if (Object.keys(imageColumns).length > 0) {
+                        tableIndex++;
+                        await processTable(table, imageColumns, tableIndex);
+                    }
+                }
+
+                if (tableIndex === 0) {
+                    setStatus('No tables with image columns found.', 'error');
+                } else {
+                    setStatus(`Completed! Created GIFs from ${tableIndex} tables. Click individual download buttons or download all.`, 'success');
+
+                    // Add download all button
+                    if (allGifs.length > 1) {
+                        const downloadAllBtn = document.createElement('button');
+                        downloadAllBtn.className = 'download-btn download-all-btn';
+                        downloadAllBtn.textContent = `Download All ${allGifs.length} GIFs`;
+                        downloadAllBtn.onclick = downloadAllGifs;
+                        tablesContainer.appendChild(downloadAllBtn);
+                    }
+                }
+
+            } catch (error) {
+                setStatus('Error: ' + error.message, 'error');
+                console.error(error);
+            }
+
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Processing';
+        }
+
+        function findImageColumns(table) {
+            const rows = table.querySelectorAll('tr');
+            const imageColumns = {};
+
+            // Find header row to get column names
+            const headerRow = rows[0];
+            const headers = [];
+            if (headerRow) {
+                headerRow.querySelectorAll('th, td').forEach((cell, idx) => {
+                    headers[idx] = cell.textContent.trim() || `Column ${idx + 1}`;
+                });
+            }
+
+            // Scan all rows for images
+            for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+                const cells = rows[rowIdx].querySelectorAll('td, th');
+                let colIdx = 0;
+
+                cells.forEach((cell) => {
+                    const imgs = cell.querySelectorAll('img');
+                    imgs.forEach(img => {
+                        let src = img.getAttribute('src') || '';
+
+                        // Convert to full URL and get higher resolution
+                        if (src.startsWith('//')) {
+                            src = 'https:' + src;
+                        } else if (src.startsWith('/')) {
+                            src = 'https://en.wikipedia.org' + src;
+                        }
+
+                        // Try to get larger image
+                        src = src.replace(/\/\d+px-/, '/200px-');
+
+                        if (src.includes('.png') || src.includes('.PNG') ||
+                            src.includes('.jpg') || src.includes('.jpeg') ||
+                            src.includes('.gif') || src.includes('.svg')) {
+
+                            if (!imageColumns[colIdx]) {
+                                imageColumns[colIdx] = {
+                                    name: headers[colIdx] || `Column ${colIdx + 1}`,
+                                    images: []
+                                };
+                            }
+                            imageColumns[colIdx].images.push(src);
+                        }
+                    });
+
+                    // Handle colspan
+                    const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+                    colIdx += colspan;
+                });
+            }
+
+            // Filter to only columns with multiple images
+            const filtered = {};
+            for (const [col, data] of Object.entries(imageColumns)) {
+                if (data.images.length >= 2) {
+                    filtered[col] = data;
+                }
+            }
+
+            return filtered;
+        }
+
+        async function processTable(table, imageColumns, tableIndex) {
+            const container = document.getElementById('tablesContainer');
+
+            // Get table caption or first header content for naming
+            const caption = table.querySelector('caption');
+            const firstHeader = table.querySelector('th');
+            const tableName = caption?.textContent.trim() ||
+                             `Table ${tableIndex}`;
+
+            const section = document.createElement('div');
+            section.className = 'table-section';
+            section.innerHTML = `<h2>${tableName}</h2><div class="columns-grid" id="table${tableIndex}Grid"></div>`;
+            container.appendChild(section);
+
+            const grid = section.querySelector('.columns-grid');
+
+            for (const [colIdx, colData] of Object.entries(imageColumns)) {
+                await processColumn(colData, tableIndex, colIdx, grid);
+            }
+        }
+
+        async function processColumn(colData, tableIndex, colIdx, grid) {
+            const card = document.createElement('div');
+            card.className = 'column-card';
+            card.innerHTML = `
+                <h3>${colData.name}</h3>
+                <div class="image-count">${colData.images.length} images</div>
+                <div class="placeholder" id="preview_${tableIndex}_${colIdx}">
+                    <div class="loading-spinner"></div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress_${tableIndex}_${colIdx}" style="width: 0%"></div>
+                </div>
+                <button class="download-btn" id="btn_${tableIndex}_${colIdx}" disabled>
+                    Loading...
+                </button>
+            `;
+            grid.appendChild(card);
+
+            try {
+                const gifBlob = await createGifFromImages(colData.images, tableIndex, colIdx);
+
+                const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
+                const btnEl = document.getElementById(`btn_${tableIndex}_${colIdx}`);
+
+                const gifUrl = URL.createObjectURL(gifBlob);
+
+                previewEl.outerHTML = `<img src="${gifUrl}" class="gif-preview" alt="Animated GIF">`;
+
+                btnEl.textContent = 'Download GIF';
+                btnEl.disabled = false;
+                btnEl.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = gifUrl;
+                    a.download = `wenninger_table${tableIndex}_${colData.name.replace(/[^a-z0-9]/gi, '_')}.gif`;
+                    a.click();
+                };
+
+                allGifs.push({
+                    blob: gifBlob,
+                    name: `wenninger_table${tableIndex}_${colData.name.replace(/[^a-z0-9]/gi, '_')}.gif`
+                });
+
+            } catch (error) {
+                console.error('Error creating GIF:', error);
+                const previewEl = document.getElementById(`preview_${tableIndex}_${colIdx}`);
+                const btnEl = document.getElementById(`btn_${tableIndex}_${colIdx}`);
+                previewEl.innerHTML = `<span style="color: #ff4757;">Error loading images</span>`;
+                btnEl.textContent = 'Failed';
+            }
+        }
+
+        async function createGifFromImages(imageUrls, tableIndex, colIdx) {
+            const progressEl = document.getElementById(`progress_${tableIndex}_${colIdx}`);
+
+            // Load all images
+            const images = [];
+            let loaded = 0;
+
+            for (const url of imageUrls) {
+                try {
+                    const img = await loadImage(url);
+                    images.push(img);
+                } catch (e) {
+                    console.warn('Failed to load image:', url, e);
+                }
+                loaded++;
+                progressEl.style.width = `${(loaded / imageUrls.length) * 50}%`;
+            }
+
+            if (images.length < 2) {
+                throw new Error('Not enough images loaded');
+            }
+
+            // Find max dimensions
+            let maxWidth = 0;
+            let maxHeight = 0;
+            for (const img of images) {
+                maxWidth = Math.max(maxWidth, img.width);
+                maxHeight = Math.max(maxHeight, img.height);
+            }
+
+            // Cap dimensions for performance
+            const scale = Math.min(1, 200 / Math.max(maxWidth, maxHeight));
+            maxWidth = Math.round(maxWidth * scale);
+            maxHeight = Math.round(maxHeight * scale);
+
+            // Create GIF
+            return new Promise((resolve, reject) => {
+                const gif = new GIF({
+                    workers: 2,
+                    quality: 10,
+                    width: maxWidth,
+                    height: maxHeight,
+                    workerScript: GIF_WORKER_URL
+                });
+
+                // Add frames
+                const canvas = document.createElement('canvas');
+                canvas.width = maxWidth;
+                canvas.height = maxHeight;
+                const ctx = canvas.getContext('2d');
+
+                for (const img of images) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, maxWidth, maxHeight);
+
+                    // Center image
+                    const imgScale = Math.min(maxWidth / img.width, maxHeight / img.height);
+                    const w = img.width * imgScale;
+                    const h = img.height * imgScale;
+                    const x = (maxWidth - w) / 2;
+                    const y = (maxHeight - h) / 2;
+
+                    ctx.drawImage(img, x, y, w, h);
+                    gif.addFrame(ctx, {copy: true, delay: frameDelay});
+                }
+
+                gif.on('progress', (p) => {
+                    progressEl.style.width = `${50 + p * 50}%`;
+                });
+
+                gif.on('finished', (blob) => {
+                    progressEl.style.width = '100%';
+                    resolve(blob);
+                });
+
+                gif.render();
+            });
+        }
+
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+
+                // Use a CORS proxy for images
+                const proxiedUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    // Try without proxy as fallback
+                    const img2 = new Image();
+                    img2.crossOrigin = 'anonymous';
+                    img2.onload = () => resolve(img2);
+                    img2.onerror = reject;
+                    img2.src = url;
+                };
+                img.src = proxiedUrl;
+            });
+        }
+
+        function downloadAllGifs() {
+            allGifs.forEach((gif, idx) => {
+                setTimeout(() => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(gif.blob);
+                    a.download = gif.name;
+                    a.click();
+                }, idx * 500); // Stagger downloads
+            });
+        }
+    </script>
+</body>
+</html>
